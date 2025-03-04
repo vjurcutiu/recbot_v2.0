@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RRWeb Replay</title>
+    <script src=".\node_modules\rrweb-player\dist\index.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/rrweb-player@latest/dist/style.css"
+    />
+  </head>
+  <body>
+    <h1>RRWeb Replay</h1>
+
+    <input type="file" id="fileInput" accept=".json" />
+    <div
+      id="playerRoot"
+      style="width: 100%; height: 600px; border: 1px solid #ccc; margin-top: 10px;"
+    ></div>
+
+    <script>
+      const fileInput = document.getElementById('fileInput');
+
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const events = JSON.parse(e.target.result);
+            console.log('Parsed events:', events);
+
+            new rrwebPlayer({
+              target: document.getElementById('playerRoot'),
+              props: {
+                events: events,
+                width: 1024,
+                height: 576,
+                showController: true,
+                autoPlay: true,
+              },
+            });
+          } catch (err) {
+            console.error('Failed to parse JSON:', err);
+            alert('Invalid JSON!');
+          }
+        };
+        reader.readAsText(file);
+      });
+    </script>
+  </body>
+</html>

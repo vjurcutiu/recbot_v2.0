@@ -1,17 +1,31 @@
-import React, { useState } from 'react';
-import NotificationModal from './components/NotificationModal';
+import React, { useState, useEffect } from 'react';
+import Start from './components/Start';
+// Import additional components as needed.
+// import OtherComponent from './components/OtherComponent';
 
 function App() {
-  const [showModal, setShowModal] = useState(false);
+  // Set "start" as the default component.
+  const [activeComponent, setActiveComponent] = useState('start');
 
-  const handleStart = () => {
-    setShowModal(true);
-  };
+  useEffect(() => {
+    // Check if the chrome runtime API is available.
+    if (window.chrome && chrome.runtime && chrome.runtime.onMessage) {
+      // Listen for messages from the background process.
+      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        // Expect the message to have an "activeComponent" property.
+        if (message && message.activeComponent) {
+          setActiveComponent(message.activeComponent);
+        }
+      });
+    }
+  }, []);
 
   return (
     <div>
-      <button onClick={handleStart}>Start</button>
-      {showModal && <NotificationModal onClose={() => setShowModal(false)} />}
+      {activeComponent === 'start' && <Start />}
+      {/* Add additional conditions for other components.
+          For example: */}
+      {/* {activeComponent === 'other' && <OtherComponent />} */}
     </div>
   );
 }

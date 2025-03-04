@@ -1,0 +1,30 @@
+[
+    {
+      "name": "Booking Task",
+      "objectives": [
+        "Search for available hotels",
+        "Compare prices",
+        "Book a room"
+      ],
+      "startUrl": "https://www.booking.com"
+    },
+    {
+      "name": "Amazon Shopping Task",
+      "objectives": [
+        "Browse for electronics",
+        "Compare product reviews",
+        "Add to cart"
+      ],
+      "startUrl": "https://www.amazon.com"
+    },
+    {
+      "name": "Travel Booking Task",
+      "objectives": [
+        "Search for flight deals",
+        "Compare travel packages",
+        "Book a flight"
+      ],
+      "startUrl": "https://www.booking.com"
+    }
+  ]
+  

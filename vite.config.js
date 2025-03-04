@@ -10,7 +10,9 @@ export default defineConfig({
     emptyOutDir: false,  // <- Prevent Webpack-built files from being removed
     rollupOptions: {
       input: {
-        popup: path.resolve(__dirname, 'popup/index.html')  // Entry for the popup UI
+        popup: path.resolve(__dirname, 'popup/index.html'),  // Entry for the popup UI
+        window: path.resolve(__dirname, 'popup/start.html'),  // New entry for the extra window
+
       }
     }
   }

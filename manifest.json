@@ -28,8 +28,8 @@
     }
   },
   "web_accessible_resources": [
-    {
-      "resources": ["dist/main.js", "dist/assets/*"],  
+    {      
+      "resources": ["dist/main.js", "dist/assets/*", "dist/popup/start.html"],  
       "matches": ["<all_urls>"]
     }
   ]

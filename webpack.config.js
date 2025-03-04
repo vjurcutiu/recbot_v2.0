@@ -1,14 +1,15 @@
-const path = require('path');
+import path from 'path';
 
-module.exports = {
+export default {
   mode: 'production', // or 'development'
   entry: {
     main: './src/init.js',
     background: './background.js'
   },
   output: {
-    filename: '[name].js',  // This will output "main.js" and "background.js"
-    path: path.resolve(__dirname, 'dist')
+    filename: '[name].js',
+    path: path.resolve(process.cwd(), 'dist'),
+    clean: true
   },
   module: {
     rules: [

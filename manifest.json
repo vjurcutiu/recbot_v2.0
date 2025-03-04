@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Interaction Recorder",
   "version": "1.0",
-  "permissions": ["activeTab", "scripting", "storage", "notifications", "downloads", "tabs"],
+  "permissions": ["activeTab", "scripting", "storage", "notifications", "downloads", "tabs", "windows"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "dist/background.js",
@@ -17,7 +17,7 @@
     }
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "dist/popup/index.html"   
   },
   "commands": {
     "toggle-recording": {
@@ -29,7 +29,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["dist/main.js"],
+      "resources": ["dist/main.js", "dist/assets/*"],  
       "matches": ["<all_urls>"]
     }
   ]

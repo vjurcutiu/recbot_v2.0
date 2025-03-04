@@ -6,14 +6,11 @@
     "type": "module",
     "main": "background.js",
     "scripts": {
-      "build:background": "webpack",
-      "start:background": "webpack serve --open",
-      "watch:background": "webpack --watch",
-      "dev:popup": "vite",
-      "build:popup": "vite build",
-      "lint": "eslint .",
-      "preview": "vite preview",
-      "build": "npm run build:background && npm run build:popup"
+    "build:background": "webpack",
+    "build:popup": "vite build",
+    "build": "npm run build:background && npm run build:popup",
+    "dev:popup": "vite",
+    "watch:background": "webpack --watch"
     },
     "keywords": [],
     "author": "",

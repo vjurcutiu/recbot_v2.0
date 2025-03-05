@@ -58,28 +58,19 @@ function Start() {
   };
 
   // Start the task:
-  // 1. Open the task URL in a new tab.
-  // 2. Open a new extension window for step creation.
-  // 3. Close the current window.
+  // Instead of opening a new tab or window, send a message to the background script to change the active component to 'StepCreator'
   const startTask = () => {
     if (activeTask) {
-      // Open the task's URL in a new tab.
-      chrome.tabs.create({ url: activeTask.startUrl }, () => {
-        // Open the extension window for step creation.
-        const stepCreationUrl = chrome.runtime.getURL('popup/stepcreation.html');
-        chrome.windows.create(
-          {
-            url: stepCreationUrl,
-            type: 'popup',
-            width: 800,
-            height: 600,
-          },
-          () => {
-            // Close the current window.
-            window.close();
+      chrome.runtime.sendMessage(
+        { action: 'setActiveComponent', payload: 'StepCreator' },
+        (response) => {
+          if (response && response.success) {
+            console.log('Global state updated to StepCreator');
+          } else {
+            console.error('Failed to update global state');
           }
-        );
-      });
+        }
+      );
     }
   };
 

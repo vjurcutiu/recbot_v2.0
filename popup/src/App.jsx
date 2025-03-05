@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Start from './components/Start';
-// Import additional components as needed.
-// import OtherComponent from './components/OtherComponent';
+import StepCreator from './components/StepCreator'; // Import the StepCreator component
+import StepLoop from './components/StepLoop'
 
 function App() {
   // Set "start" as the default component.
@@ -23,9 +23,9 @@ function App() {
   return (
     <div>
       {activeComponent === 'start' && <Start />}
-      {/* Add additional conditions for other components.
-          For example: */}
-      {/* {activeComponent === 'other' && <OtherComponent />} */}
+      {activeComponent === 'StepCreator' && <StepCreator />}
+      {activeComponent === 'StepLoop' && <StepLoop />}
+      {/* You can add more conditions for other components as needed. */}
     </div>
   );
 }

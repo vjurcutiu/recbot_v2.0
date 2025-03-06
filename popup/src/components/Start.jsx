@@ -71,6 +71,23 @@ function Start() {
           }
         }
       );
+      chrome.runtime.sendMessage(
+        {
+          action: 'recordTask',
+          payload: {
+            name: activeTask.name,
+            objectives: activeTask.objectives,
+            startUrl: activeTask.startUrl
+          }
+        },
+        (response) => {
+          if (response && response.success) {
+            console.log('Task recorded:', response.recordedTask);
+          } else {
+            console.error('Failed to record task');
+          }
+        }
+      );
     }
   };
 

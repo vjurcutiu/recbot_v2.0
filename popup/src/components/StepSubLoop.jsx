@@ -4,51 +4,59 @@ function StepSubLoop({ onNext, onEnableReplan }) {
   // State for the initial reason input.
   const [reason, setReason] = useState('');
   const [submittedReason, setSubmittedReason] = useState(null);
-  
-  // State for toggles.
+
+  // State for toggle answers.
   const [completed, setCompleted] = useState(null); // "yes" or "no"
   const [closer, setCloser] = useState(null); // "yes", "no", or "not sure"
   const [needsReplan, setNeedsReplan] = useState(null); // "yes" or "no"
 
-  // Additional state variables to track if a toggle has been shown.
+  // State to control which toggle sections have been revealed.
   const [showCompleted, setShowCompleted] = useState(false);
   const [showCloser, setShowCloser] = useState(false);
   const [showNeedsReplan, setShowNeedsReplan] = useState(false);
+
+  // Track the current active toggle.
+  // Valid values: "completed", "closer", "needsReplan", or null.
+  const [currentStep, setCurrentStep] = useState(null);
 
   // Handles submitting the reason.
   const handleReasonSubmit = (e) => {
     e.preventDefault();
     if (reason.trim() !== '') {
       setSubmittedReason(reason);
-      // Reveal the completed toggle once a reason is submitted.
+      // Reveal the first toggle and mark it as active.
       setShowCompleted(true);
+      setCurrentStep('completed');
     }
   };
 
-  // Handles the toggle for whether the current step is completed.
+  // Handles the Completed toggle.
   const handleCompletedChange = (answer) => {
     setCompleted(answer);
     if (answer === 'yes') {
-      // If completed, we can immediately move on.
+      // If completed, immediately move on.
       if (onNext) onNext();
     } else if (answer === 'no') {
-      // Reveal the next toggle.
+      // Reveal the Closer toggle and set it as active.
       setShowCloser(true);
+      setCurrentStep('closer');
     }
   };
 
-  // Handles the toggle for feeling closer to completion.
+  // Handles the Closer toggle.
   const handleCloserChange = (answer) => {
     setCloser(answer);
-    // Reveal the next toggle once an answer is provided.
-    setShowNeedsReplan(true);
     if (answer === 'yes') {
       // If answered yes, close the window.
       window.close();
+    } else {
+      // Reveal the Replanning toggle and set it as active.
+      setShowNeedsReplan(true);
+      setCurrentStep('needsReplan');
     }
   };
 
-  // Handles the toggle for replanning.
+  // Handles the Replanning toggle.
   const handleNeedsReplanChange = (answer) => {
     setNeedsReplan(answer);
     if (answer === 'yes') {
@@ -58,13 +66,48 @@ function StepSubLoop({ onNext, onEnableReplan }) {
     }
   };
 
+  // Back navigation functions.
+  // When regressing, we clear the answer of the toggle we go back to so that it becomes active again.
+  const goBackFromCloser = () => {
+    // Remove Closer toggle (unmount it) and clear the Completed answer so it becomes active again.
+    setShowCloser(false);
+    setCloser(null);
+    setCompleted(null);
+    setCurrentStep('completed');
+  };
+
+  const goBackFromNeedsReplan = () => {
+    // Remove Replanning toggle (unmount it) and clear the Closer answer so it becomes active again.
+    setShowNeedsReplan(false);
+    setNeedsReplan(null);
+    setCloser(null);
+    setCurrentStep('closer');
+  };
+
   return (
     <div>
       {/* Reason Input */}
       <div>
         <p>What’s the reason you chose that action among all the possible actions?</p>
         {submittedReason ? (
-          <p>{submittedReason}</p>
+          <div>
+            <p>{submittedReason}</p>
+            <button
+              onClick={() => {
+                setSubmittedReason(null);
+                // Reset all toggle states
+                setShowCompleted(false);
+                setShowCloser(false);
+                setShowNeedsReplan(false);
+                setCompleted(null);
+                setCloser(null);
+                setNeedsReplan(null);
+                setCurrentStep(null);
+              }}
+            >
+              Edit
+            </button>
+          </div>
         ) : (
           <form onSubmit={handleReasonSubmit}>
             <input
@@ -83,7 +126,10 @@ function StepSubLoop({ onNext, onEnableReplan }) {
         <div>
           <p>Did you complete the current planning step?</p>
           {completed ? (
-            <p>Your answer: {completed}</p>
+            <div>
+              <p>Your answer: {completed}</p>
+              {/* No back button for the first toggle */}
+            </div>
           ) : (
             <>
               <button onClick={() => handleCompletedChange('yes')}>Yes</button>
@@ -98,12 +144,20 @@ function StepSubLoop({ onNext, onEnableReplan }) {
         <div>
           <p>Do you think you're closer to completing the current planning step?</p>
           {closer ? (
-            <p>Your answer: {closer}</p>
+            <div>
+              <p>Your answer: {closer}</p>
+              {currentStep === 'closer' && (
+                <button onClick={goBackFromCloser}>Back</button>
+              )}
+            </div>
           ) : (
             <>
               <button onClick={() => handleCloserChange('yes')}>Yes</button>
               <button onClick={() => handleCloserChange('no')}>No</button>
               <button onClick={() => handleCloserChange('not sure')}>Not Sure</button>
+              {currentStep === 'closer' && (
+                <button onClick={goBackFromCloser}>Back</button>
+              )}
             </>
           )}
         </div>
@@ -114,11 +168,19 @@ function StepSubLoop({ onNext, onEnableReplan }) {
         <div>
           <p>Do you need replanning?</p>
           {needsReplan ? (
-            <p>Your answer: {needsReplan}</p>
+            <div>
+              <p>Your answer: {needsReplan}</p>
+              {currentStep === 'needsReplan' && (
+                <button onClick={goBackFromNeedsReplan}>Back</button>
+              )}
+            </div>
           ) : (
             <>
               <button onClick={() => handleNeedsReplanChange('yes')}>Yes</button>
               <button onClick={() => handleNeedsReplanChange('no')}>No</button>
+              {currentStep === 'needsReplan' && (
+                <button onClick={goBackFromNeedsReplan}>Back</button>
+              )}
             </>
           )}
         </div>

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import StepSubLoop from './StepSubLoop';
+import StepSubCreator from './StepSubCreator';
 
 function StepLoop() {
   const [steps, setSteps] = useState([]);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [isEditable, setIsEditable] = useState(false);
+  const [isReplanning, setIsReplanning] = useState(false);
+  const [replannedSteps, setReplannedSteps] = useState([]);
 
   useEffect(() => {
     // Fetch the current record state from the background script.
@@ -27,12 +30,27 @@ function StepLoop() {
     });
   };
 
-  // Callback to enable task list editing for replanning.
+  // Callback to enable replanning.
   const handleEnableReplan = () => {
-    setIsEditable(true);
+    const confirmed = window.confirm(
+      "This will delete all future steps. Do you wish to continue?"
+    );
+    if (confirmed) {
+      // Remove all steps after the current active step.
+      setSteps((prevSteps) => prevSteps.slice(0, activeStepIndex + 1));
+      setReplannedSteps([]); // Initialize replanning steps as empty.
+      setIsReplanning(true);
+    }
   };
 
-  // Determine the current step and its title. Default to "Step 1" if no steps are loaded.
+  // In a real implementation you might merge the replanned steps into your global state.
+  // For now, we simply append them to the locked steps when the user confirms the replan.
+  const confirmReplan = () => {
+    setSteps([...steps, ...replannedSteps]);
+    setIsReplanning(false);
+  };
+
+  // Determine the current step. Default to "Step 1" if no steps are loaded.
   const currentStep = steps[activeStepIndex] || { id: 1, name: '' };
   const title = `Step ${currentStep.id}`;
 
@@ -63,9 +81,22 @@ function StepLoop() {
           </li>
         ))}
       </ul>
-      {/* Pass callbacks to the subcomponent */}
-      <StepSubLoop onNext={handleNext} onEnableReplan={handleEnableReplan} />
-      </div>
+
+      {isReplanning ? (
+        // Display the replanning interface using StepSubCreator.
+        <div>
+          <StepSubCreator
+            steps={replannedSteps}
+            setSteps={setReplannedSteps}
+            baseStepNumber={currentStep.id}
+          />
+          <button onClick={confirmReplan}>Confirm Replan</button>
+        </div>
+      ) : (
+        // If not replanning, show the normal subloop controls.
+        <StepSubLoop onNext={handleNext} onEnableReplan={handleEnableReplan} />
+      )}
+    </div>
   );
 }
 

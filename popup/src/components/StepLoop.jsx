@@ -94,7 +94,11 @@ function StepLoop() {
         </div>
       ) : (
         // If not replanning, show the normal subloop controls.
-        <StepSubLoop onNext={handleNext} onEnableReplan={handleEnableReplan} />
+        <StepSubLoop
+            key={activeStepIndex}
+            onNext={handleNext}
+            onEnableReplan={handleEnableReplan}
+            />
       )}
     </div>
   );

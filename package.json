@@ -23,6 +23,8 @@
         "pako": "^2.1.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
+        "redux": "^5.0.1",
+        "redux-thunk": "^3.1.0",
         "rrweb": "^2.0.0-alpha.4",
         "rrweb-player": "^1.0.0-alpha.4",
         "xstate": "^5.19.2"

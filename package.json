@@ -13,18 +13,19 @@
         "watch:background": "webpack --watch",
         "watch:popup": "vite build --watch",
         "watch": "concurrently \"npm run watch:popup\" \"npm run watch:background\""
-
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@xstate/react": "^5.0.2",
         "jszip": "^3.10.1",
         "pako": "^2.1.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "rrweb": "^2.0.0-alpha.4",
-        "rrweb-player": "^1.0.0-alpha.4"
+        "rrweb-player": "^1.0.0-alpha.4",
+        "xstate": "^5.19.2"
     },
     "devDependencies": {
         "@babel/core": "^7.26.9",

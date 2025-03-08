@@ -8,17 +8,26 @@ const initialState = {
       name: '',
       objectives: '',
       url: '',
-      steps: [] // Each step can include id, text, actionsTaken, etc.
-    }
+      steps: [],
+    },
   },
-  activeComponent: 'Start', // Default component value
+  activeComponent: 'Start',
+  areFilesLoaded: false, // <-- New
 };
 
 // Action types for updating the store.
 const actionTypes = {
   SET_ACTIVE_COMPONENT: 'SET_ACTIVE_COMPONENT',
-  SET_RECORD_STATE: 'SET_RECORD_STATE'
+  SET_RECORD_STATE: 'SET_RECORD_STATE',
+  SET_FILES_LOADED: 'SET_FILES_LOADED', // <-- New
 };
+
+
+export const setFilesLoaded = (areFilesLoaded) => ({
+  type: actionTypes.SET_FILES_LOADED,
+  payload: areFilesLoaded,
+});
+
 
 // Synchronous action creators.
 const setActiveComponent = (component) => ({
@@ -38,9 +47,11 @@ const reducer = (state = initialState, action) => {
       return { ...state, activeComponent: action.payload };
     case actionTypes.SET_RECORD_STATE:
       return { ...state, recordState: action.payload };
-    default:
-      return state;
-  }
+      case actionTypes.SET_FILES_LOADED:
+        return { ...state, areFilesLoaded: action.payload };
+      default:
+        return state;
+      }
 };
 
 // Create the store with redux-thunk for asynchronous actions.

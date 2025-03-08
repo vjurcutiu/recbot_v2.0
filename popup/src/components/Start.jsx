@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { updateActiveComponent, updateRecordTask } from '../services/uiStateManagement';
 
 function Start() {
+  const dispatch = useDispatch();
   const [tasks, setTasks] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
   const [error, setError] = useState('');
@@ -15,11 +18,9 @@ function Start() {
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target.result);
-        // Validate that the file is an array.
         if (!Array.isArray(json)) {
           throw new Error('Invalid structure: Expected an array of tasks.');
         }
-        // Validate each task object.
         json.forEach((task) => {
           if (
             typeof task.name !== 'string' ||
@@ -31,7 +32,6 @@ function Start() {
             );
           }
         });
-        // Set tasks and automatically pick a random task.
         setTasks(json);
         const randomIndex = Math.floor(Math.random() * json.length);
         setActiveTask(json[randomIndex]);
@@ -57,36 +57,17 @@ function Start() {
     document.getElementById('taskFileInput').click();
   };
 
-  // Start the task:
-  // Instead of opening a new tab or window, send a message to the background script to change the active component to 'StepCreator'
+  // Start the task by updating the Redux store.
   const startTask = () => {
     if (activeTask) {
-      chrome.runtime.sendMessage(
-        { action: 'setActiveComponent', payload: 'StepCreator' },
-        (response) => {
-          if (response && response.success) {
-            console.log('Global state updated to StepCreator');
-          } else {
-            console.error('Failed to update global state');
-          }
-        }
-      );
-      chrome.runtime.sendMessage(
-        {
-          action: 'recordTask',
-          payload: {
-            name: activeTask.name,
-            objectives: activeTask.objectives,
-            startUrl: activeTask.startUrl
-          }
-        },
-        (response) => {
-          if (response && response.success) {
-            console.log('Task recorded:', response.recordedTask);
-          } else {
-            console.error('Failed to record task');
-          }
-        }
+      // Dispatch actions to update the redux store.
+      dispatch(updateActiveComponent('StepCreator'));
+      dispatch(
+        updateRecordTask({
+          name: activeTask.name,
+          objectives: activeTask.objectives,
+          startUrl: activeTask.startUrl,
+        })
       );
     }
   };
@@ -98,7 +79,6 @@ function Start() {
         <button onClick={openFilePrompt}>Add Task List</button>
       )}
 
-      {/* Hidden file input for selecting a JSON file */}
       <input
         id="taskFileInput"
         type="file"

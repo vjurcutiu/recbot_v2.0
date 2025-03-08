@@ -1,5 +1,5 @@
 import { createStore, applyMiddleware } from 'redux';
-import thunk from 'redux-thunk';
+import { thunk } from 'redux-thunk';
 
 // Define the initial state of the store based on your backend structure.
 const initialState = {
@@ -84,5 +84,10 @@ export const updateActiveComponent = (component) => (dispatch) => {
     }
   });
 };
+
+store.subscribe(() => {
+  console.log('Store updated:', store.getState());
+});
+
 
 export default store;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import StepSubCreator from './StepSubCreator';
 import { updateRecordTask, updateActiveComponent } from '../services/uiStateManagement';
@@ -6,6 +6,11 @@ import { updateRecordTask, updateActiveComponent } from '../services/uiStateMana
 function StepCreator() {
   const dispatch = useDispatch();
   const [steps, setSteps] = useState([]);
+
+  // Relay that StepCreator is the active component on mount.
+  useEffect(() => {
+    dispatch(updateActiveComponent('StepCreator'));
+  }, [dispatch]);
 
   const handleDone = () => {
     const taskPayload = {

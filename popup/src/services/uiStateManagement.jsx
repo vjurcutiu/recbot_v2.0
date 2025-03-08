@@ -1,7 +1,7 @@
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 
-// Define the initial state of the store based on your backend structure.
+// Define the initial state of the store.
 const initialState = {
   recordState: {
     currentTask: {
@@ -11,7 +11,7 @@ const initialState = {
       steps: [] // Each step can include id, text, actionsTaken, etc.
     }
   },
-  activeComponent: 'start', // Default value from backend's globalState
+  activeComponent: 'Start', // Default component value
 };
 
 // Action types for updating the store.
@@ -33,7 +33,7 @@ const setRecordState = (recordState) => ({
 
 // The reducer updates the store based on actions.
 const reducer = (state = initialState, action) => {
-  switch(action.type) {
+  switch (action.type) {
     case actionTypes.SET_ACTIVE_COMPONENT:
       return { ...state, activeComponent: action.payload };
     case actionTypes.SET_RECORD_STATE:
@@ -47,47 +47,39 @@ const reducer = (state = initialState, action) => {
 const store = createStore(reducer, applyMiddleware(thunk));
 
 /**
- * Asynchronous action to fetch the current recordState from the backend.
+ * Action to fetch the current recordState.
+ * Now it directly dispatches the default state without communicating with the background.
  */
 export const fetchRecordState = () => (dispatch) => {
-  chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
-    if(response && response.recordState) {
-      dispatch(setRecordState(response.recordState));
-    }
-  });
+  // Directly use the initial state's recordState or any local source.
+  dispatch(setRecordState(initialState.recordState));
 };
 
 /**
- * Asynchronous action to update the recordTask in the backend and update the store.
- * The payload should include properties like name, objectives, startUrl, and steps.
+ * Action to update the recordTask.
+ * It directly updates the local state with the new task payload.
  */
 export const updateRecordTask = (payload) => (dispatch, getState) => {
-  chrome.runtime.sendMessage({ action: 'recordTask', payload }, (response) => {
-    if(response && response.recordedTask) {
-      // Optionally, merge with current recordState if needed.
-      const currentRecordState = getState().recordState;
-      dispatch(setRecordState({
-        ...currentRecordState,
-        currentTask: response.recordedTask,
-      }));
-    }
-  });
+  const currentRecordState = getState().recordState;
+  dispatch(setRecordState({
+    ...currentRecordState,
+    currentTask: {
+      ...currentRecordState.currentTask,
+      ...payload,
+    },
+  }));
 };
 
 /**
- * Action to update the active component in both the backend and store.
+ * Action to update the active component.
+ * It directly dispatches the new active component to the store.
  */
 export const updateActiveComponent = (component) => (dispatch) => {
-  chrome.runtime.sendMessage({ action: 'setActiveComponent', payload: component }, (response) => {
-    if(response && response.activeComponent) {
-      dispatch(setActiveComponent(response.activeComponent));
-    }
-  });
+  dispatch(setActiveComponent(component));
 };
 
 store.subscribe(() => {
   console.log('Store updated:', store.getState());
 });
-
 
 export default store;

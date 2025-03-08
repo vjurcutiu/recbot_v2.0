@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { updateActiveComponent, updateRecordTask } from '../services/uiStateManagement';
 
@@ -8,6 +8,11 @@ function Start() {
   const [activeTask, setActiveTask] = useState(null);
   const [error, setError] = useState('');
   const [fileLoaded, setFileLoaded] = useState(false);
+
+  // Relay that Start is the active component on mount.
+  useEffect(() => {
+    dispatch(updateActiveComponent('Start'));
+  }, [dispatch]);
 
   // Triggered when the file input changes.
   const handleFileChange = (e) => {

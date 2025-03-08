@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import StepSubLoop from './StepSubLoop';
 import StepSubCreator from './StepSubCreator';
+import { updateActiveComponent } from '../services/uiStateManagement';
 
 function StepLoop() {
+  const dispatch = useDispatch();
+  
+  // Relay that StepLoop is the active component on mount.
+  useEffect(() => {
+    dispatch(updateActiveComponent('StepLoop'));
+  }, [dispatch]);
+
   // Read steps from the Redux store.
   const recordState = useSelector((state) => state.recordState);
   const currentTask = recordState.currentTask;
@@ -81,7 +89,12 @@ function StepLoop() {
           <button onClick={confirmReplan}>Confirm Replan</button>
         </div>
       ) : (
-        <StepSubLoop onNext={handleNext} onEnableReplan={handleEnableReplan} />
+        <StepSubLoop
+          key={activeStepIndex}
+          onNext={handleNext}
+          onEnableReplan={handleEnableReplan}
+          isLastStep={activeStepIndex === steps.length - 1}
+        />
       )}
     </div>
   );

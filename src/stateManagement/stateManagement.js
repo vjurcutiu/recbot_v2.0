@@ -8,7 +8,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'setActiveComponent' && message.payload) {
     globalState.activeComponent = message.payload;
     sendResponse({ success: true, activeComponent: globalState.activeComponent });
-    chrome.runtime.sendMessage({ activeComponent: globalState.activeComponent });
   } 
   else if (message.action === 'recordTask' && message.payload) {
     const { name, objectives, startUrl, steps } = message.payload;

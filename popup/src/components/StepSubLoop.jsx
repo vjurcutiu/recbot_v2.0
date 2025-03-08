@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { updateActiveComponent } from '../services/uiStateManagement';
 
-function StepSubLoop({ onNext, onEnableReplan }) {
+function StepSubLoop({ onNext, onEnableReplan, isLastStep }) {
+  const dispatch = useDispatch();
+
   // State for the initial reason input.
   const [reason, setReason] = useState('');
   const [submittedReason, setSubmittedReason] = useState(null);
@@ -34,8 +38,12 @@ function StepSubLoop({ onNext, onEnableReplan }) {
   const handleCompletedChange = (answer) => {
     setCompleted(answer);
     if (answer === 'yes') {
-      // If completed, immediately move on.
-      if (onNext) onNext();
+      // Only move to End if this is the last step.
+      if (isLastStep) {
+        dispatch(updateActiveComponent('End'));
+      } else {
+        if (onNext) onNext();
+      }
     } else if (answer === 'no') {
       // Reveal the Closer toggle and set it as active.
       setShowCloser(true);
@@ -47,7 +55,6 @@ function StepSubLoop({ onNext, onEnableReplan }) {
   const handleCloserChange = (answer) => {
     setCloser(answer);
     if (answer === 'yes') {
-      // If answered yes, close the window.
       window.close();
     } else {
       // Reveal the Replanning toggle and set it as active.
@@ -67,9 +74,7 @@ function StepSubLoop({ onNext, onEnableReplan }) {
   };
 
   // Back navigation functions.
-  // When regressing, we clear the answer of the toggle we go back to so that it becomes active again.
   const goBackFromCloser = () => {
-    // Remove Closer toggle (unmount it) and clear the Completed answer so it becomes active again.
     setShowCloser(false);
     setCloser(null);
     setCompleted(null);
@@ -77,7 +82,6 @@ function StepSubLoop({ onNext, onEnableReplan }) {
   };
 
   const goBackFromNeedsReplan = () => {
-    // Remove Replanning toggle (unmount it) and clear the Closer answer so it becomes active again.
     setShowNeedsReplan(false);
     setNeedsReplan(null);
     setCloser(null);

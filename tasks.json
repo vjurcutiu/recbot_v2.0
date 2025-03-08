@@ -6,8 +6,7 @@
         "Compare prices",
         "Book a room"
       ],
-      "startUrl": "https://www.booking.com",
-      "status": ""
+      "startUrl": "https://www.booking.com"
     },
     {
       "name": "Amazon Shopping Task",
@@ -16,8 +15,7 @@
         "Compare product reviews",
         "Add to cart"
       ],
-      "startUrl": "https://www.amazon.com",
-      "status": ""
+      "startUrl": "https://www.amazon.com"
     },
     {
       "name": "Travel Booking Task",
@@ -26,8 +24,7 @@
         "Compare travel packages",
         "Book a flight"
       ],
-      "startUrl": "https://www.booking.com",
-      "status": ""
+      "startUrl": "https://www.booking.com"
     }
   ]
   

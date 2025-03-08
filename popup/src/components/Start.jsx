@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { updateActiveComponent, updateRecordTask } from '../services/uiStateManagement';
+import { addTask, getTasks } from '../storage/db';
 
 function Start() {
   const dispatch = useDispatch();
@@ -18,10 +19,11 @@ function Start() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+    
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
+        // Parse and validate JSON structure.
         const json = JSON.parse(event.target.result);
         if (!Array.isArray(json)) {
           throw new Error('Invalid structure: Expected an array of tasks.');
@@ -38,10 +40,46 @@ function Start() {
           }
         });
         setTasks(json);
-        const randomIndex = Math.floor(Math.random() * json.length);
-        setActiveTask(json[randomIndex]);
-        setFileLoaded(true);
-        setError('');
+        
+        // Get current tasks from the DB.
+        const dbTasks = await getTasks();
+        
+        // For each task in the file, check if a similar task exists; if not, add it.
+        for (let task of json) {
+          const exists = dbTasks.some((t) =>
+            t.name === task.name &&
+            t.startUrl === task.startUrl &&
+            JSON.stringify(t.objectives) === JSON.stringify(task.objectives)
+          );
+          if (!exists) {
+            await addTask(task);
+          }
+        }
+        
+        // Refresh tasks from the DB after adding new ones.
+        const updatedDbTasks = await getTasks();
+        const fileTaskNames = json.map((task) => task.name);
+        const tasksInDb = updatedDbTasks.filter((t) => fileTaskNames.includes(t.name));
+        
+        // Check if all tasks are marked as 'Done'
+        const allDone = tasksInDb.every(
+          (t) => t.status && t.status.toLowerCase() === 'done'
+        );
+        
+        if (allDone) {
+          setActiveTask(null);
+          setFileLoaded(true);
+          setError('This task list has been completed. Please load a different task list.');
+        } else {
+          // Choose one random task that is not marked as done.
+          const notDone = tasksInDb.filter(
+            (t) => !t.status || t.status.toLowerCase() !== 'done'
+          );
+          const randomIndex = Math.floor(Math.random() * notDone.length);
+          setActiveTask(notDone[randomIndex]);
+          setFileLoaded(true);
+          setError('');
+        }
       } catch (err) {
         setError(err.message);
         setTasks([]);
@@ -65,7 +103,6 @@ function Start() {
   // Start the task by updating the Redux store.
   const startTask = () => {
     if (activeTask) {
-      // Dispatch actions to update the redux store.
       dispatch(updateActiveComponent('StepCreator'));
       dispatch(
         updateRecordTask({

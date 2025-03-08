@@ -1,17 +1,34 @@
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { updateActiveComponent } from '../services/uiStateManagement';
+import { updateTask } from '../storage/db';
 
 function End() {
   const dispatch = useDispatch();
+  // Get the active task from the Redux store, now including the unique id.
+  const activeTask = useSelector(state => state.recordState.currentTask);
 
-  const handleNextTask = () => {
-    // Navigate back to the Start component for a new task.
+  // This function updates the task in the DB using the stored unique id.
+  const completeTask = async () => {
+    try {
+      if (activeTask && activeTask.id) {
+        await updateTask(activeTask.id, { status: 'done' });
+        console.log(`Task ${activeTask.id} marked as done.`);
+      } else {
+        console.log('No active task id found.');
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+    }
+  };
+
+  const handleNextTask = async () => {
+    await completeTask();
     dispatch(updateActiveComponent('Start'));
   };
 
-  const handleDone = () => {
-    // Finalize the process. Here, we'll close the window.
+  const handleDone = async () => {
+    await completeTask();
     window.close();
   };
 

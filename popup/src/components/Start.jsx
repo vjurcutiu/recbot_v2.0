@@ -49,7 +49,7 @@ function Start() {
           const exists = dbTasks.some((t) =>
             t.name === task.name &&
             t.startUrl === task.startUrl &&
-            JSON.stringify(t.objectives) === JSON.stringify(task.objectives)
+            JSON.stringify(t.objectives) === JSON.stringify(task.objectives)            
           );
           if (!exists) {
             await addTask(task);
@@ -106,9 +106,10 @@ function Start() {
       dispatch(updateActiveComponent('StepCreator'));
       dispatch(
         updateRecordTask({
+          id: activeTask.id, // Store the unique id from the DB
           name: activeTask.name,
           objectives: activeTask.objectives,
-          startUrl: activeTask.startUrl,
+          startUrl: activeTask.startUrl, // keep naming consistent
         })
       );
     }

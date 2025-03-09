@@ -12,6 +12,8 @@ let liteEventsGlobal = []; // Global lite events
 let interactableElementsGlobal = [];
 let screenshotQueue = [];
 let screenshotCounter = 0;
+let windowOpened = false;
+
 
 function showNotification(title, message) {
   const iconUrl = chrome.runtime.getURL('icon.png');
@@ -95,6 +97,16 @@ function archiveScreenshots() {
   }
 }
 
+function openStartWindow() {
+  chrome.windows.create({
+    url: chrome.runtime.getURL("./dist/popup/start.html"),
+    type: "popup", // or "normal" if you prefer a standard window
+    width: 800,
+    height: 600
+  }, (win) => {
+    console.log("start.html window opened:", win);
+  });
+}
 
 // Helper to ensure content script is ready (ping with retries)
 function ensureContentScript(tabId, callback, retries = 3) {
@@ -145,6 +157,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.log("Screenshot queued:", filename);
         } catch (innerErr) {
           console.error("Error in screenshot callback:", innerErr);
+        }
+      });
+    }
+    else if (message.action === 'userClicked') {
+      chrome.storage.local.get({ recording: false }, (res) => {
+        if (res.recording && !windowOpened) {  // Check if we haven't already stopped
+          windowOpened = true;
+          chrome.storage.local.set({ recording: false }, () => {
+            console.log('Recording stopped due to user click.');
+            if (sender.tab && sender.tab.id) {
+              recordingTabId = null;
+              ensureContentScript(sender.tab.id, () => {
+                chrome.tabs.sendMessage(sender.tab.id, { action: 'stop' }, () => {
+                  console.log(`Recording stopped on tab ${sender.tab.id} due to click.`);
+                  // Export recordings and data as needed
+                  
+                  // Open the start.html window
+                  openStartWindow();
+                });
+              });
+            }
+          });
         }
       });
     }

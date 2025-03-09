@@ -47,6 +47,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+document.addEventListener('click', () => {
+  chrome.runtime.sendMessage({ action: 'userClicked' });
+});
+
 // Notify the background script that the content script is ready
 chrome.runtime.sendMessage({ action: 'contentScriptReady' });
 console.log('rrweb & LiteExport content script loaded');

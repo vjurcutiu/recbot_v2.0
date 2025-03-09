@@ -7,21 +7,25 @@ function StepCreator() {
   const dispatch = useDispatch();
   const [steps, setSteps] = useState([]);
 
-  // Relay that StepCreator is the active component on mount.
   useEffect(() => {
     dispatch(updateActiveComponent('StepCreator'));
   }, [dispatch]);
 
   const handleDone = () => {
-    const taskPayload = {
-      steps: steps,
-    };
-
-    // Dispatch the update record task action.
-    dispatch(updateRecordTask(taskPayload));
-
-    // Dispatch the action to update the active component.
+    // 1) Dispatch Redux updates
+    dispatch(updateRecordTask({ steps }));
     dispatch(updateActiveComponent('StepLoop'));
+
+    // 2) Tell background script to start recording
+    if (chrome && chrome.runtime) {
+      chrome.runtime.sendMessage({ action: 'start-recording-from-ui' }, (response) => {
+        console.log('Background response:', response);
+        // 3) Close the current extension window after we get a response
+        window.close();
+      });
+    } else {
+      console.warn('Chrome runtime not found: are you in a normal webpage instead of an extension context?');
+    }
   };
 
   return (

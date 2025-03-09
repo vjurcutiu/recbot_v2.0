@@ -147,6 +147,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       });
     }
+    if (message.action === 'start-recording-from-ui') {
+      // Mark ourselves as recording in local storage
+      chrome.storage.local.set({ recording: true }, () => {
+        console.log('Manually started recording from UI.');
+  
+        // (Optional) show a Chrome notification
+        showNotification('Recording Started', 'Recording for this tab has started.');
+  
+        // Get the currently active tab
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (!tabs || !tabs.length) {
+            sendResponse({ error: 'No active tab found to record.' });
+            return;
+          }
+  
+          const tabId = tabs[0].id;
+          // Keep track of it so the onUpdated listener knows which tab to re-start
+          recordingTabId = tabId;
+  
+          // Ensure the content script is loaded, then tell it to start
+          ensureContentScript(tabId, () => {
+            chrome.tabs.sendMessage(tabId, { action: 'start' }, (resp) => {
+              if (chrome.runtime.lastError) {
+                console.error('Error sending start to content script:', chrome.runtime.lastError.message);
+                sendResponse({ error: chrome.runtime.lastError.message });
+              } else {
+                console.log('Recording started on tab:', tabId);
+                sendResponse({ status: 'started' });
+              }
+            });
+          });
+        });
+  
+        // Return true to indicate that we'll send a response asynchronously
+        return true;
+      });
+    }  
   } catch (err) {
     console.error("Error in background message handler:", err);
   }

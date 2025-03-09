@@ -2,6 +2,7 @@ import pako from 'pako';
 import JSZip from 'jszip';
 import { blobToDataUrl, downloadDataUrl, exportGenericData } from './src/utils.js';
 import './src/stateManagement/stateManagement.js';
+import './src/frontendUtils/uiCommands.js'
 
 let recordingTabId = null; 
 let recording = false;

@@ -1,12 +1,13 @@
 // background.js
 let globalState = {
-  activeComponent: 'start', // default value
+  activeComponent: null, // default value
 };
 
 // Listen for messages from the frontend
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'setActiveComponent' && message.payload) {
     globalState.activeComponent = message.payload;
+    chrome.runtime.sendMessage({ action: 'activeComponentChanged', payload: globalState.activeComponent });
     sendResponse({ success: true, activeComponent: globalState.activeComponent });
   } 
   else if (message.action === 'recordTask' && message.payload) {

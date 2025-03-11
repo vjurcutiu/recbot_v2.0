@@ -1,7 +1,8 @@
+// uiStateManagement.jsx
 import { createStore, applyMiddleware } from 'redux';
 import { thunk } from 'redux-thunk';
 
-// Define the initial state of the store.
+// Define the initial state of the store without the activeComponent property.
 const initialState = {
   recordState: {
     currentTask: {
@@ -11,30 +12,22 @@ const initialState = {
       steps: [],
     },
   },
-  activeComponent: 'Start',
-  areFilesLoaded: false, // <-- New
+  areFilesLoaded: false, // Maintained for file load status.
 };
 
-// Action types for updating the store.
+// Define action types.
 const actionTypes = {
-  SET_ACTIVE_COMPONENT: 'SET_ACTIVE_COMPONENT',
   SET_RECORD_STATE: 'SET_RECORD_STATE',
-  SET_FILES_LOADED: 'SET_FILES_LOADED', // <-- New
+  SET_FILES_LOADED: 'SET_FILES_LOADED',
 };
 
-
+// Action creator for updating file load status.
 export const setFilesLoaded = (areFilesLoaded) => ({
   type: actionTypes.SET_FILES_LOADED,
   payload: areFilesLoaded,
 });
 
-
-// Synchronous action creators.
-const setActiveComponent = (component) => ({
-  type: actionTypes.SET_ACTIVE_COMPONENT,
-  payload: component,
-});
-
+// Synchronous action creator for recordState.
 const setRecordState = (recordState) => ({
   type: actionTypes.SET_RECORD_STATE,
   payload: recordState,
@@ -43,15 +36,13 @@ const setRecordState = (recordState) => ({
 // The reducer updates the store based on actions.
 const reducer = (state = initialState, action) => {
   switch (action.type) {
-    case actionTypes.SET_ACTIVE_COMPONENT:
-      return { ...state, activeComponent: action.payload };
     case actionTypes.SET_RECORD_STATE:
       return { ...state, recordState: action.payload };
-      case actionTypes.SET_FILES_LOADED:
-        return { ...state, areFilesLoaded: action.payload };
-      default:
-        return state;
-      }
+    case actionTypes.SET_FILES_LOADED:
+      return { ...state, areFilesLoaded: action.payload };
+    default:
+      return state;
+  }
 };
 
 // Create the store with redux-thunk for asynchronous actions.
@@ -62,7 +53,6 @@ const store = createStore(reducer, applyMiddleware(thunk));
  * Now it directly dispatches the default state without communicating with the background.
  */
 export const fetchRecordState = () => (dispatch) => {
-  // Directly use the initial state's recordState or any local source.
   dispatch(setRecordState(initialState.recordState));
 };
 
@@ -72,22 +62,18 @@ export const fetchRecordState = () => (dispatch) => {
  */
 export const updateRecordTask = (payload) => (dispatch, getState) => {
   const currentRecordState = getState().recordState;
-  dispatch(setRecordState({
-    ...currentRecordState,
-    currentTask: {
-      ...currentRecordState.currentTask,
-      ...payload,
-    },
-  }));
+  dispatch(
+    setRecordState({
+      ...currentRecordState,
+      currentTask: {
+        ...currentRecordState.currentTask,
+        ...payload,
+      },
+    })
+  );
 };
 
-/**
- * Action to update the active component.
- * It directly dispatches the new active component to the store.
- */
-export const updateActiveComponent = (component) => (dispatch) => {
-  dispatch(setActiveComponent(component));
-};
+// Removed updateActiveComponent since active component is now managed by the background script.
 
 store.subscribe(() => {
   console.log('Store updated:', store.getState());

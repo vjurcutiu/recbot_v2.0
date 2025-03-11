@@ -1,12 +1,12 @@
+// End.jsx
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { updateActiveComponent } from '../services/uiStateManagement';
 import { updateTask } from '../storage/db';
 
 function End() {
   const dispatch = useDispatch();
   // Get the active task from the Redux store, now including the unique id.
-  const activeTask = useSelector(state => state.recordState.currentTask);
+  const activeTask = useSelector((state) => state.recordState.currentTask);
 
   // This function updates the task in the DB using the stored unique id.
   const completeTask = async () => {
@@ -24,7 +24,17 @@ function End() {
 
   const handleNextTask = async () => {
     await completeTask();
-    dispatch(updateActiveComponent('Start'));
+    // Set active component to "Start" via background script
+    chrome.runtime.sendMessage(
+      { action: 'setActiveComponent', payload: 'Start' },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error setting active component:', chrome.runtime.lastError);
+        } else {
+          console.log('Active component updated to:', response.activeComponent);
+        }
+      }
+    );
   };
 
   const handleDone = async () => {

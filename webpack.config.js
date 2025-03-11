@@ -9,7 +9,7 @@ export default {
   output: {
     filename: '[name].js',
     path: path.resolve(process.cwd(), 'dist'),
-    clean: true
+    clean: false
   },
   module: {
     rules: [

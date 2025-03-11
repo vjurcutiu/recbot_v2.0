@@ -1,18 +1,25 @@
+// StepLoop.jsx
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import StepSubLoop from './StepSubLoop';
 import StepSubCreator from './StepSubCreator';
-import { updateActiveComponent } from '../services/uiStateManagement';
 
 function StepLoop() {
-  const dispatch = useDispatch();
-  
-  // Relay that StepLoop is the active component on mount.
+  // On mount, set active component via the background script.
   useEffect(() => {
-    dispatch(updateActiveComponent('StepLoop'));
-  }, [dispatch]);
+    chrome.runtime.sendMessage(
+      { action: 'setActiveComponent', payload: 'StepLoop' },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error setting active component:', chrome.runtime.lastError);
+        } else {
+          console.log('Active component set to:', response.activeComponent);
+        }
+      }
+    );
+  }, []);
 
-  // Read steps from the Redux store.
+  // Read steps and currentTask from the Redux store.
   const recordState = useSelector((state) => state.recordState);
   const currentTask = recordState.currentTask;
   const stepsFromStore = currentTask.steps || [];

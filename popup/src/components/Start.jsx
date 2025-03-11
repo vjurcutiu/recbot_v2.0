@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  updateActiveComponent,
   updateRecordTask,
   setFilesLoaded,
 } from '../services/uiStateManagement';
@@ -11,20 +10,29 @@ import { addTask, getTasks } from '../storage/db';
 function Start() {
   const dispatch = useDispatch();
 
-  // Local states for tasks, the currently active task, and any error message
+  // Local states for tasks, the currently active task, and any error message.
   const [tasks, setTasks] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
   const [error, setError] = useState('');
 
-  // Global Redux state indicating whether tasks have been loaded
+  // Redux state indicating whether tasks have been loaded.
   const areFilesLoaded = useSelector((state) => state.areFilesLoaded);
 
-  // Mark "Start" as the active component once mounted
+  // Set "Start" as the active component via background script once mounted
   useEffect(() => {
-    dispatch(updateActiveComponent('Start'));
-  }, [dispatch]);
+    chrome.runtime.sendMessage(
+      { action: 'setActiveComponent', payload: 'Start' },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error setting active component:', chrome.runtime.lastError);
+        } else {
+          console.log('Active component set to:', response.activeComponent);
+        }
+      }
+    );
+  }, []);
 
-  // If areFilesLoaded is true, fetch tasks directly from Dexie
+  // Once files are loaded, fetch tasks directly from IndexedDB (Dexie)
   useEffect(() => {
     if (areFilesLoaded) {
       fetchTasksFromDB();
@@ -37,19 +45,18 @@ function Start() {
       const dbTasks = await getTasks();
       setTasks(dbTasks);
 
-      // Find any tasks not done
+      // Find tasks that are not marked as done
       const notDone = dbTasks.filter(
         (t) => !t.status || t.status.toLowerCase() !== 'done'
       );
 
       if (notDone.length === 0) {
-        // All tasks are done
         setActiveTask(null);
         setError(
           'This task list has been completed. Please load a different task list.'
         );
       } else {
-        // Set a random active task among the not-done tasks
+        // Pick a random active task from those not done
         const randomIndex = Math.floor(Math.random() * notDone.length);
         setActiveTask(notDone[randomIndex]);
         setError('');
@@ -61,7 +68,7 @@ function Start() {
     }
   };
 
-  // Handle file selection when areFilesLoaded is false
+  // Handle file selection when tasks haven't been loaded yet
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -95,7 +102,7 @@ function Start() {
         // Pull any existing tasks from IndexedDB
         const dbTasks = await getTasks();
 
-        // For each new task, check whether an identical one exists. If not, add it.
+        // For each new task, check if an identical one exists. If not, add it.
         for (let task of json) {
           const exists = dbTasks.some(
             (t) =>
@@ -115,19 +122,19 @@ function Start() {
           fileTaskNames.includes(t.name)
         );
 
-        // Check if *all* tasks in the JSON are already 'done'
+        // Check if *all* tasks in the JSON are already marked as 'done'
         const allDone = tasksInDb.every(
           (t) => t.status && t.status.toLowerCase() === 'done'
         );
 
         if (allDone) {
           setActiveTask(null);
-          dispatch(setFilesLoaded(true)); // Mark loaded
+          dispatch(setFilesLoaded(true));
           setError(
             'This task list has been completed. Please load a different task list.'
           );
         } else {
-          // Find tasks *not* done; pick one randomly for activeTask
+          // Pick a random task among those not done for the activeTask
           const notDone = tasksInDb.filter(
             (t) => !t.status || t.status.toLowerCase() !== 'done'
           );
@@ -137,7 +144,6 @@ function Start() {
           setError('');
         }
       } catch (err) {
-        // If any error occurs, reset state and mark not loaded
         setError(err.message);
         setTasks([]);
         setActiveTask(null);
@@ -159,13 +165,26 @@ function Start() {
     document.getElementById('taskFileInput').click();
   };
 
-  // Start an individual task by updating Redux with the chosen task’s details
+  // Start an individual task by sending a message to update the background's global state for the active component,
+  // then using Redux to record the task.
   const startTask = () => {
     if (activeTask) {
-      dispatch(updateActiveComponent('StepCreator'));
+      // Set the active component to "StepCreator" via background script
+      chrome.runtime.sendMessage(
+        { action: 'setActiveComponent', payload: 'StepCreator' },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('Error setting active component:', chrome.runtime.lastError);
+          } else {
+            console.log('Active component updated to:', response.activeComponent);
+          }
+        }
+      );
+
+      // Record the task in Redux (and potentially, in the background's global state via the redux action if needed)
       dispatch(
         updateRecordTask({
-          id: activeTask.id, // The DB's unique ID
+          id: activeTask.id, // The DB's unique ID, if available
           name: activeTask.name,
           objectives: activeTask.objectives,
           startUrl: activeTask.startUrl,
@@ -191,10 +210,10 @@ function Start() {
         onChange={handleFileChange}
       />
 
-      {/* Show errors if any */}
+      {/* Display any errors */}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* Render the active task UI if tasks are loaded and we have an activeTask */}
+      {/* Render the active task UI if tasks are loaded and an active task exists */}
       {areFilesLoaded && activeTask && (
         <div style={{ marginTop: '20px' }}>
           <h2>{activeTask.name}</h2>

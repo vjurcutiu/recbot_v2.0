@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { updateActiveComponent } from '../services/uiStateManagement';
 
-function StepSubLoop({ onNext, onEnableReplan, isLastStep }) {
-  const dispatch = useDispatch();
+function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent }) {
+  // Removed useDispatch and updateActiveComponent action
 
   // State for the initial reason input.
   const [reason, setReason] = useState('');
@@ -40,7 +38,7 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep }) {
     if (answer === 'yes') {
       // Only move to End if this is the last step.
       if (isLastStep) {
-        dispatch(updateActiveComponent('End'));
+        setActiveComponent('End');
       } else {
         if (onNext) onNext();
       }

@@ -161,9 +161,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     }
     else if (message.action === 'userClicked') {
+      if (windowOpened) return; // Prevent further processing
+      windowOpened = true;
       chrome.storage.local.get({ recording: false }, (res) => {
-        if (res.recording && !windowOpened) {  // Check if we haven't already stopped
-          windowOpened = true;
+        if (res.recording) {
           chrome.storage.local.set({ recording: false }, () => {
             console.log('Recording stopped due to user click.');
             if (sender.tab && sender.tab.id) {
@@ -172,7 +173,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 chrome.tabs.sendMessage(sender.tab.id, { action: 'stop' }, () => {
                   console.log(`Recording stopped on tab ${sender.tab.id} due to click.`);
                   // Export recordings and data as needed
-                  
                   // Open the start.html window
                   openStartWindow();
                 });

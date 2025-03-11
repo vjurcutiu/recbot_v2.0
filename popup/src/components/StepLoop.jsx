@@ -1,23 +1,10 @@
-// StepLoop.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import StepSubLoop from './StepSubLoop';
 import StepSubCreator from './StepSubCreator';
 
-function StepLoop() {
-  // On mount, set active component via the background script.
-  useEffect(() => {
-    chrome.runtime.sendMessage(
-      { action: 'setActiveComponent', payload: 'StepLoop' },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          console.error('Error setting active component:', chrome.runtime.lastError);
-        } else {
-          console.log('Active component set to:', response.activeComponent);
-        }
-      }
-    );
-  }, []);
+function StepLoop({ setActiveComponent }) {
+  // Removed the useEffect that sends a message on mount
 
   // Read steps and currentTask from the Redux store.
   const recordState = useSelector((state) => state.recordState);
@@ -101,6 +88,7 @@ function StepLoop() {
           onNext={handleNext}
           onEnableReplan={handleEnableReplan}
           isLastStep={activeStepIndex === steps.length - 1}
+          setActiveComponent={setActiveComponent} // pass the callback here
         />
       )}
     </div>

@@ -1,4 +1,3 @@
-// Start.jsx
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -7,7 +6,7 @@ import {
 } from '../services/uiStateManagement';
 import { addTask, getTasks } from '../storage/db';
 
-function Start() {
+function Start({ setActiveComponent }) {
   const dispatch = useDispatch();
 
   // Local states for tasks, the currently active task, and any error message.
@@ -18,19 +17,8 @@ function Start() {
   // Redux state indicating whether tasks have been loaded.
   const areFilesLoaded = useSelector((state) => state.areFilesLoaded);
 
-  // Set "Start" as the active component via background script once mounted
-  useEffect(() => {
-    chrome.runtime.sendMessage(
-      { action: 'setActiveComponent', payload: 'Start' },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          console.error('Error setting active component:', chrome.runtime.lastError);
-        } else {
-          console.log('Active component set to:', response.activeComponent);
-        }
-      }
-    );
-  }, []);
+  // No longer setting "Start" via chrome.runtime on mount;
+  // active component is now managed by App.jsx.
 
   // Once files are loaded, fetch tasks directly from IndexedDB (Dexie)
   useEffect(() => {
@@ -165,21 +153,12 @@ function Start() {
     document.getElementById('taskFileInput').click();
   };
 
-  // Start an individual task by sending a message to update the background's global state for the active component,
-  // then using Redux to record the task.
+  // Start an individual task by using the passed-in callback to update the active component,
+  // then recording the task in Redux.
   const startTask = () => {
     if (activeTask) {
-      // Set the active component to "StepCreator" via background script
-      chrome.runtime.sendMessage(
-        { action: 'setActiveComponent', payload: 'StepCreator' },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            console.error('Error setting active component:', chrome.runtime.lastError);
-          } else {
-            console.log('Active component updated to:', response.activeComponent);
-          }
-        }
-      );
+      // Switch active component to "StepCreator" using the provided callback.
+      setActiveComponent('StepCreator');
 
       // Record the task in Redux (and potentially, in the background's global state via the redux action if needed)
       dispatch(

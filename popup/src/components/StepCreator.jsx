@@ -15,6 +15,12 @@ function StepCreator({ setActiveComponent }) {
   }, []);
 
   const handleDone = () => {
+    // If no steps are added, prompt the user to add at least one step.
+    if (steps.length === 0) {
+      alert("Please add at least one step before clicking done.");
+      return;
+    }
+  
     // Update the current task with the new steps in the background state.
     chrome.runtime.sendMessage(
       { action: 'recordTask', payload: { steps } },
@@ -22,12 +28,12 @@ function StepCreator({ setActiveComponent }) {
         console.log('Task recorded:', response);
       }
     );
-
+  
     // Switch active component to "StepLoop".
     setActiveComponent('StepLoop');
-
+  
     console.log('currentTask:', currentTask);
-
+  
     // Open a new tab with the task's start URL if available.
     if (currentTask.startUrl) {
       chrome.runtime.sendMessage(
@@ -39,7 +45,7 @@ function StepCreator({ setActiveComponent }) {
     } else {
       console.warn("No start URL provided in currentTask");
     }
-
+  
     // Trigger recording from the UI.
     chrome.runtime.sendMessage(
       { action: 'start-recording-from-ui' },
@@ -49,6 +55,7 @@ function StepCreator({ setActiveComponent }) {
       }
     );
   };
+  
 
   return (
     <div>

@@ -55,7 +55,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           steps: Array.isArray(steps)
             ? steps.map((step) => ({
                 id: step.id || '',
-                text: step.text || '',
+                name: step.name || '',
                 actionsTaken: step.actionsTaken || [],
                 interactableElements: step.interactableElements || [],
                 screenshots: step.screenshots || []

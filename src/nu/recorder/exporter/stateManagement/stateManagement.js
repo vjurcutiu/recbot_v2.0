@@ -7,7 +7,7 @@ export const globalState = {
   recording: false, // new property
 };
 
-const recordState = {
+export const recordState = {
   currentTask: {
     name: '',
     objectives: [],

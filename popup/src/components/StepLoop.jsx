@@ -1,30 +1,34 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
 import StepSubLoop from './StepSubLoop';
 import StepSubCreator from './StepSubCreator';
 
 function StepLoop({ setActiveComponent }) {
-  // Removed the useEffect that sends a message on mount
-
-  // Read steps and currentTask from the Redux store.
-  const recordState = useSelector((state) => state.recordState);
-  const currentTask = recordState.currentTask;
-  const stepsFromStore = currentTask.steps || [];
-
-  const [steps, setSteps] = useState(stepsFromStore);
+  const [currentTask, setCurrentTask] = useState({});
+  const [steps, setSteps] = useState([]);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [isEditable, setIsEditable] = useState(false);
   const [isReplanning, setIsReplanning] = useState(false);
   const [replannedSteps, setReplannedSteps] = useState([]);
 
-  // Callback to move to the next step.
+  // Retrieve currentTask and its steps from the background state on mount.
+  useEffect(() => {
+    chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
+      if (response && response.recordState) {
+        const task = response.recordState.currentTask;
+        setCurrentTask(task);
+        setSteps(task.steps || []);
+      }
+    });
+  }, []);
+
+  // Move to the next step.
   const handleNext = () => {
     setActiveStepIndex((prevIndex) =>
       prevIndex < steps.length - 1 ? prevIndex + 1 : prevIndex
     );
   };
 
-  // Callback to enable replanning.
+  // Enable replanning by truncating future steps.
   const handleEnableReplan = () => {
     const confirmed = window.confirm(
       "This will delete all future steps. Do you wish to continue?"
@@ -36,7 +40,7 @@ function StepLoop({ setActiveComponent }) {
     }
   };
 
-  // Confirm the replanning and merge new steps.
+  // Confirm replanning by merging new steps.
   const confirmReplan = () => {
     setSteps([...steps, ...replannedSteps]);
     setIsReplanning(false);
@@ -88,7 +92,7 @@ function StepLoop({ setActiveComponent }) {
           onNext={handleNext}
           onEnableReplan={handleEnableReplan}
           isLastStep={activeStepIndex === steps.length - 1}
-          setActiveComponent={setActiveComponent} // pass the callback here
+          setActiveComponent={setActiveComponent}
         />
       )}
     </div>

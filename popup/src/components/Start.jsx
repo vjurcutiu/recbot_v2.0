@@ -1,39 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  updateRecordTask,
-  setFilesLoaded,
-} from '../services/uiStateManagement';
 import { addTask, getTasks } from '../storage/db';
 
 function Start({ setActiveComponent }) {
-  const dispatch = useDispatch();
-
-  // Local states for tasks, the currently active task, and any error message.
   const [tasks, setTasks] = useState([]);
   const [activeTask, setActiveTask] = useState(null);
   const [error, setError] = useState('');
+  const [filesLoaded, setFilesLoaded] = useState(false);
 
-  // Redux state indicating whether tasks have been loaded.
-  const areFilesLoaded = useSelector((state) => state.areFilesLoaded);
-
-  // No longer setting "Start" via chrome.runtime on mount;
-  // active component is now managed by App.jsx.
-
-  // Once files are loaded, fetch tasks directly from IndexedDB (Dexie)
+  // On mount, get the global filesLoaded state from the background script.
   useEffect(() => {
-    if (areFilesLoaded) {
+    chrome.runtime.sendMessage({ action: 'getFilesLoaded' }, (response) => {
+      if (response && typeof response.filesLoaded === 'boolean') {
+        setFilesLoaded(response.filesLoaded);
+      }
+    });
+  }, []);
+
+  // When files are loaded, fetch tasks from IndexedDB.
+  useEffect(() => {
+    if (filesLoaded) {
       fetchTasksFromDB();
     }
-    // eslint-disable-next-line
-  }, [areFilesLoaded]);
+  }, [filesLoaded]);
 
   const fetchTasksFromDB = async () => {
     try {
       const dbTasks = await getTasks();
       setTasks(dbTasks);
 
-      // Find tasks that are not marked as done
+      // Find tasks that are not marked as done.
       const notDone = dbTasks.filter(
         (t) => !t.status || t.status.toLowerCase() !== 'done'
       );
@@ -44,7 +39,7 @@ function Start({ setActiveComponent }) {
           'This task list has been completed. Please load a different task list.'
         );
       } else {
-        // Pick a random active task from those not done
+        // Pick a random active task.
         const randomIndex = Math.floor(Math.random() * notDone.length);
         setActiveTask(notDone[randomIndex]);
         setError('');
@@ -56,7 +51,7 @@ function Start({ setActiveComponent }) {
     }
   };
 
-  // Handle file selection when tasks haven't been loaded yet
+  // Handle file upload.
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -64,14 +59,11 @@ function Start({ setActiveComponent }) {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        // Parse the JSON contents
         const json = JSON.parse(event.target.result);
-
-        // Validate top-level format
         if (!Array.isArray(json)) {
           throw new Error('Invalid structure: Expected an array of tasks.');
         }
-        // Validate each task's structure
+
         json.forEach((task) => {
           if (
             typeof task.name !== 'string' ||
@@ -84,13 +76,10 @@ function Start({ setActiveComponent }) {
           }
         });
 
-        // If validation passes, store tasks in local state
+        // Save tasks locally and add new ones to the DB.
         setTasks(json);
-
-        // Pull any existing tasks from IndexedDB
         const dbTasks = await getTasks();
 
-        // For each new task, check if an identical one exists. If not, add it.
         for (let task of json) {
           const exists = dbTasks.some(
             (t) =>
@@ -103,71 +92,89 @@ function Start({ setActiveComponent }) {
           }
         }
 
-        // Refresh tasks from DB so we can pick the next active task
+        // Refresh tasks from the DB.
         const updatedDbTasks = await getTasks();
         const fileTaskNames = json.map((task) => task.name);
         const tasksInDb = updatedDbTasks.filter((t) =>
           fileTaskNames.includes(t.name)
         );
 
-        // Check if *all* tasks in the JSON are already marked as 'done'
+        // Check if all tasks are done.
         const allDone = tasksInDb.every(
           (t) => t.status && t.status.toLowerCase() === 'done'
         );
 
         if (allDone) {
           setActiveTask(null);
-          dispatch(setFilesLoaded(true));
+          updateFilesLoaded(true);
           setError(
             'This task list has been completed. Please load a different task list.'
           );
         } else {
-          // Pick a random task among those not done for the activeTask
           const notDone = tasksInDb.filter(
             (t) => !t.status || t.status.toLowerCase() !== 'done'
           );
           const randomIndex = Math.floor(Math.random() * notDone.length);
           setActiveTask(notDone[randomIndex]);
-          dispatch(setFilesLoaded(true));
+          updateFilesLoaded(true);
           setError('');
         }
       } catch (err) {
         setError(err.message);
         setTasks([]);
         setActiveTask(null);
-        dispatch(setFilesLoaded(false));
+        updateFilesLoaded(false);
       }
     };
 
     reader.onerror = () => {
       setError('Error reading file.');
-      dispatch(setFilesLoaded(false));
+      updateFilesLoaded(false);
     };
 
-    // Read the user-provided JSON file
     reader.readAsText(file);
   };
 
-  // Opens the file prompt
+  // Helper to update the global filesLoaded state.
+  const updateFilesLoaded = (value) => {
+    chrome.runtime.sendMessage({ action: 'setFilesLoaded', payload: value }, (response) => {
+      if (response && response.success) {
+        setFilesLoaded(response.filesLoaded);
+      }
+    });
+  };
+
+  // Opens the file prompt.
   const openFilePrompt = () => {
     document.getElementById('taskFileInput').click();
   };
 
-  // Start an individual task by using the passed-in callback to update the active component,
-  // then recording the task in Redux.
+  // Start a task by updating the active component and recording the task in the background state.
   const startTask = () => {
     if (activeTask) {
-      // Switch active component to "StepCreator" using the provided callback.
+      // Change active component in the UI.
       setActiveComponent('StepCreator');
+      chrome.runtime.sendMessage(
+        { action: 'setActiveComponent', payload: 'StepCreator' },
+        (response) => {
+          console.log('Active component changed:', response);
+        }
+      );
 
-      // Record the task in Redux (and potentially, in the background's global state via the redux action if needed)
-      dispatch(
-        updateRecordTask({
-          id: activeTask.id, // The DB's unique ID, if available
-          name: activeTask.name,
-          objectives: activeTask.objectives,
-          startUrl: activeTask.startUrl,
-        })
+      // Record the task in the background state.
+      chrome.runtime.sendMessage(
+        {
+          action: 'recordTask',
+          payload: {
+            name: activeTask.name,
+            objectives: activeTask.objectives,
+            startUrl: activeTask.startUrl,
+            steps: [] // Start with an empty steps array.
+          }
+        },
+        (response) => {
+          console.log('Task recorded:', response);
+        }
       );
     }
   };
@@ -176,8 +183,8 @@ function Start({ setActiveComponent }) {
     <div>
       <h1>Start Component</h1>
 
-      {/* Only offer file upload if tasks aren't loaded yet */}
-      {!areFilesLoaded && (
+      {/* Only offer file upload if tasks haven't been loaded yet */}
+      {!filesLoaded && (
         <button onClick={openFilePrompt}>Add Task List</button>
       )}
 
@@ -192,8 +199,8 @@ function Start({ setActiveComponent }) {
       {/* Display any errors */}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* Render the active task UI if tasks are loaded and an active task exists */}
-      {areFilesLoaded && activeTask && (
+      {/* Render active task UI */}
+      {filesLoaded && activeTask && (
         <div style={{ marginTop: '20px' }}>
           <h2>{activeTask.name}</h2>
           <p>

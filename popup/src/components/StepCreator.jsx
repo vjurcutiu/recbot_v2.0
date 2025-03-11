@@ -1,25 +1,34 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
 import StepSubCreator from './StepSubCreator';
-import { updateRecordTask } from '../services/uiStateManagement';
 
 function StepCreator({ setActiveComponent }) {
-  const dispatch = useDispatch();
   const [steps, setSteps] = useState([]);
-  const currentTask = useSelector((state) => state.recordState.currentTask);
+  const [currentTask, setCurrentTask] = useState({});
 
-  // Removed the useEffect that sends a message on mount
+  // Retrieve the current task from the background state on mount.
+  useEffect(() => {
+    chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
+      if (response && response.recordState) {
+        setCurrentTask(response.recordState.currentTask);
+      }
+    });
+  }, []);
 
   const handleDone = () => {
-    // Update task record using Redux
-    dispatch(updateRecordTask({ steps }));
+    // Update the current task with the new steps in the background state.
+    chrome.runtime.sendMessage(
+      { action: 'recordTask', payload: { steps } },
+      (response) => {
+        console.log('Task recorded:', response);
+      }
+    );
 
-    // Switch active component to "StepLoop" using the passed-in callback
+    // Switch active component to "StepLoop".
     setActiveComponent('StepLoop');
 
     console.log('currentTask:', currentTask);
 
-    // Open a new tab with the task's start URL if available
+    // Open a new tab with the task's start URL if available.
     if (currentTask.startUrl) {
       chrome.runtime.sendMessage(
         { action: 'open-new-tab', url: currentTask.startUrl },
@@ -31,12 +40,12 @@ function StepCreator({ setActiveComponent }) {
       console.warn("No start URL provided in currentTask");
     }
 
-    // Trigger the recording from the UI
+    // Trigger recording from the UI.
     chrome.runtime.sendMessage(
       { action: 'start-recording-from-ui' },
       (response) => {
         console.log('start-recording-from-ui response:', response);
-        window.close;
+        window.close();
       }
     );
   };

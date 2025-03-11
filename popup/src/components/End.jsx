@@ -1,13 +1,19 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
 import { updateTask } from '../storage/db';
 
 function End({ setActiveComponent }) {
-  const dispatch = useDispatch();
-  // Get the active task from the Redux store, now including the unique id.
-  const activeTask = useSelector((state) => state.recordState.currentTask);
+  const [activeTask, setActiveTask] = useState(null);
 
-  // This function updates the task in the DB using the stored unique id.
+  // On mount, retrieve the current task from the background state.
+  useEffect(() => {
+    chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
+      if (response && response.recordState && response.recordState.currentTask) {
+        setActiveTask(response.recordState.currentTask);
+      }
+    });
+  }, []);
+
+  // Complete the task in the DB using the stored unique id.
   const completeTask = async () => {
     try {
       if (activeTask && activeTask.id) {
@@ -23,7 +29,6 @@ function End({ setActiveComponent }) {
 
   const handleNextTask = async () => {
     await completeTask();
-    // Instead of sending a chrome.runtime message, call the provided callback.
     setActiveComponent('Start');
   };
 

@@ -1,8 +1,9 @@
 import pako from 'pako';
 import JSZip from 'jszip';
 import { blobToDataUrl, downloadDataUrl, exportGenericData } from './src/utils.js';
-import './src/stateManagement/stateManagement.js';
+import { globalState } from './src/stateManagement/stateManagement.js';
 import './src/frontendUtils/uiCommands.js'
+
 
 let recordingTabId = null; 
 let recording = false;
@@ -160,20 +161,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       });
     }
-    else if (message.action === 'userClicked') {
-      if (windowOpened) return; // Prevent further processing
+    if (message.action === 'userClicked') {
+      if (windowOpened) return;
       windowOpened = true;
       chrome.storage.local.get({ recording: false }, (res) => {
         if (res.recording) {
           chrome.storage.local.set({ recording: false }, () => {
+            globalState.recording = false;
             console.log('Recording stopped due to user click.');
             if (sender.tab && sender.tab.id) {
               recordingTabId = null;
+              globalState.recordingTabId = null;
               ensureContentScript(sender.tab.id, () => {
                 chrome.tabs.sendMessage(sender.tab.id, { action: 'stop' }, () => {
                   console.log(`Recording stopped on tab ${sender.tab.id} due to click.`);
-                  // Export recordings and data as needed
-                  // Open the start.html window
                   openStartWindow();
                 });
               });
@@ -186,6 +187,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Mark ourselves as recording in local storage
       chrome.storage.local.set({ recording: true }, () => {
         console.log('Manually started recording from UI.');
+        globalState.recording = true; 
   
         // (Optional) show a Chrome notification
         showNotification('Recording Started', 'Recording for this tab has started.');
@@ -196,21 +198,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ error: 'No active tab found to record.' });
             return;
           }
-  
           const tabId = tabs[0].id;
-          // Keep track of it so the onUpdated listener knows which tab to re-start
           recordingTabId = tabId;
-  
-          // Ensure the content script is loaded, then tell it to start
-          ensureContentScript(tabId, () => {
-            chrome.tabs.sendMessage(tabId, { action: 'start' }, (resp) => {
-              if (chrome.runtime.lastError) {
-                console.error('Error sending start to content script:', chrome.runtime.lastError.message);
-                sendResponse({ error: chrome.runtime.lastError.message });
-              } else {
+          globalState.recordingTabId = tabId; // Update the global state
+          chrome.storage.local.set({ recording: true }, () => {
+            ensureContentScript(tabId, () => {
+              chrome.tabs.sendMessage(tabId, { action: 'start' }, (resp) => {
                 console.log('Recording started on tab:', tabId);
                 sendResponse({ status: 'started' });
-              }
+              });
             });
           });
         });
@@ -219,6 +215,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return true;
       });
     }  
+    if (message.action === 'resumeRecording') {
+      const tabId = globalState.recordingTabId;
+      if (!tabId) {
+        console.error('No recordingTabId found in global state.');
+        sendResponse({ error: 'No recording tab stored.' });
+        return;
+      }
+      chrome.storage.local.set({ recording: true }, () => {
+        ensureContentScript(tabId, () => {
+          chrome.tabs.sendMessage(tabId, { action: 'start' }, () => {
+            console.log(`Recording resumed on tab ${tabId}.`);
+            sendResponse({ status: 'recording resumed' });
+          });
+        });
+      });
+      // Return true to indicate asynchronous response if needed
+      return true;
+    }
   } catch (err) {
     console.error("Error in background message handler:", err);
   }

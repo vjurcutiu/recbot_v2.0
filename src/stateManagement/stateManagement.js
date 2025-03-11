@@ -1,8 +1,10 @@
 // background.js
 
-const globalState = {
+export const globalState = {
   activeComponent: null,
-  filesLoaded: false, // now globally available
+  filesLoaded: false,
+  recordingTabId: null,
+  recording: false, // new property
 };
 
 const recordState = {

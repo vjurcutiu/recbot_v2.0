@@ -53,7 +53,9 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
   const handleCloserChange = (answer) => {
     setCloser(answer);
     if (answer === 'yes') {
-      window.close();
+      chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
+        window.close();
+      });
     } else {
       // Reveal the Replanning toggle and set it as active.
       setShowNeedsReplan(true);

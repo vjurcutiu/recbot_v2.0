@@ -1,5 +1,5 @@
-import { blobToDataUrl, downloadDataUrl, exportGenericData } from './src/utils.js';
 import { globalState, recordState } from './src/nu/recorder/exporter/stateManagement/stateManagement.js';
+import { createContext, removeContext, getContext } from './src/nu/loop/context.js'; // Import our context module
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Background script received message:', message);
@@ -65,11 +65,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ activeComponent: globalState.activeComponent });
         break;
   
-      // New actions to handle additional component requests.
       case 'open-new-tab':
         if (message.url) {
           chrome.tabs.create({ url: message.url }, (tab) => {
             console.log('New tab opened:', tab);
+            // Create a new context for the opened tab.
+            createContext(tab.id);
             sendResponse({ success: true, tabId: tab.id });
           });
         } else {
@@ -78,14 +79,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
   
       case 'start-recording-from-ui':
-        // Implement your recording start logic here.
         globalState.recording = true;
         console.log('Recording started via UI');
         sendResponse({ success: true, recording: globalState.recording });
         break;
 
       case 'resumeRecording':
-        // Implement the logic to resume recording if needed.
         globalState.recording = true;
         console.log('Recording resumed via UI');
         sendResponse({ success: true, recording: globalState.recording });
@@ -95,5 +94,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log('Unknown action received:', message.action);
         break;
     }
-  });
-  
+});
+
+// Listen for tab removals to clean up the context.
+chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
+  if (getContext(tabId)) {
+    removeContext(tabId);
+  }
+});

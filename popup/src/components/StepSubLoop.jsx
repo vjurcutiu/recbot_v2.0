@@ -69,7 +69,9 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
     if (answer === 'yes') {
       if (onEnableReplan) onEnableReplan();
     } else {
-      window.close();
+      chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
+        window.close();
+      });
     }
   };
 

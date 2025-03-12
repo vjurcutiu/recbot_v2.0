@@ -37,6 +37,13 @@ function End({ setActiveComponent }) {
     window.close();
   };
 
+  // New handler for exporting
+  const handleExport = () => {
+    chrome.runtime.sendMessage({ action: 'export' }, (response) => {
+      console.log('Export response:', response);
+    });
+  };
+
   return (
     <div>
       <h1>End Component</h1>
@@ -44,6 +51,7 @@ function End({ setActiveComponent }) {
       <div style={{ marginTop: '20px' }}>
         <button onClick={handleNextTask}>Next Task</button>
         <button onClick={handleDone}>Done</button>
+        <button onClick={handleExport}>Export</button>
       </div>
     </div>
   );

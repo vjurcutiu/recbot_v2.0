@@ -1,7 +1,7 @@
 import pako from 'pako';
 import JSZip from 'jszip';
 import { blobToDataUrl, downloadDataUrl, exportGenericData } from './src/utils.js';
-import { globalState } from './src/nu/recorder/exporter/stateManagement/stateManagement.js';
+import { globalState } from './src/nu/stateManagement/stateManagement.js';
 import './src/frontendUtils/uiCommands.js'
 
 

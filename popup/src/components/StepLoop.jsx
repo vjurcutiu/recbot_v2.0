@@ -1,3 +1,4 @@
+// StepLoop.jsx
 import React, { useState, useEffect } from 'react';
 import StepSubLoop from './StepSubLoop';
 import StepSubCreator from './StepSubCreator';
@@ -10,22 +11,32 @@ function StepLoop({ setActiveComponent }) {
   const [isReplanning, setIsReplanning] = useState(false);
   const [replannedSteps, setReplannedSteps] = useState([]);
 
-  // Retrieve currentTask and its steps from the background state on mount.
+  // Retrieve currentTask (including activeStepIndex) from the background state on mount.
   useEffect(() => {
     chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
       if (response && response.recordState) {
         const task = response.recordState.currentTask;
         setCurrentTask(task);
         setSteps(task.steps || []);
+        setActiveStepIndex(task.activeStepIndex || 0);
       }
     });
   }, []);
 
-  // Move to the next step.
+  // Move to the next step by updating the background state.
   const handleNext = () => {
-    setActiveStepIndex((prevIndex) =>
-      prevIndex < steps.length - 1 ? prevIndex + 1 : prevIndex
-    );
+    if (activeStepIndex < steps.length - 1) {
+      const newIndex = activeStepIndex + 1;
+      // Update local state immediately for responsiveness.
+      setActiveStepIndex(newIndex);
+      // Also update the background state.
+      chrome.runtime.sendMessage(
+        { action: 'recordTask', payload: { activeStepIndex: newIndex } },
+        (response) => {
+          console.log('Active step index updated:', response);
+        }
+      );
+    }
   };
 
   // Enable replanning by truncating future steps.
@@ -34,9 +45,17 @@ function StepLoop({ setActiveComponent }) {
       "This will delete all future steps. Do you wish to continue?"
     );
     if (confirmed) {
-      setSteps((prevSteps) => prevSteps.slice(0, activeStepIndex + 1));
+      const truncatedSteps = steps.slice(0, activeStepIndex + 1);
+      setSteps(truncatedSteps);
       setReplannedSteps([]);
       setIsReplanning(true);
+      // Update background state with the truncated steps.
+      chrome.runtime.sendMessage(
+        { action: 'recordTask', payload: { steps: truncatedSteps } },
+        (response) => {
+          console.log('Steps truncated for replanning:', response);
+        }
+      );
     }
   };
 
@@ -44,11 +63,10 @@ function StepLoop({ setActiveComponent }) {
   const confirmReplan = () => {
     const newSteps = [...steps, ...replannedSteps];
     setSteps(newSteps);
-    // Record the updated steps in the background.
     chrome.runtime.sendMessage(
       { action: 'recordTask', payload: { steps: newSteps } },
       (response) => {
-        console.log('Task re-recorded:', response);
+        console.log('Task re-recorded with new steps:', response);
       }
     );
     setIsReplanning(false);
@@ -76,6 +94,13 @@ function StepLoop({ setActiveComponent }) {
                   const updatedSteps = [...steps];
                   updatedSteps[index].name = e.target.value;
                   setSteps(updatedSteps);
+                  // Persist the updated step names to the background.
+                  chrome.runtime.sendMessage(
+                    { action: 'recordTask', payload: { steps: updatedSteps } },
+                    (response) => {
+                      console.log('Step name updated:', response);
+                    }
+                  );
                 }}
               />
             ) : (
@@ -97,6 +122,7 @@ function StepLoop({ setActiveComponent }) {
       ) : (
         <StepSubLoop
           key={activeStepIndex}
+          activeStepIndex={activeStepIndex} // pass the activeStepIndex prop
           onNext={handleNext}
           onEnableReplan={handleEnableReplan}
           isLastStep={activeStepIndex === steps.length - 1}

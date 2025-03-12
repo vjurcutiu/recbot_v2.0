@@ -1,19 +1,20 @@
-// background.js
+// stateManagement.js
 
 export const globalState = {
   activeComponent: null,
   filesLoaded: false,
   recordingTabId: null,
-  recording: false, // new property
+  recording: false,
 };
 
 export const recordState = {
   currentTask: {
-    id: '', // Added id property
+    id: '',
     name: '',
     objectives: [],
     startUrl: '',
-    steps: []
+    steps: [],
+    activeStepIndex: 0,  // <-- Added activeStepIndex here
   },
 };
 
@@ -22,7 +23,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'setActiveComponent':
       if (message.payload) {
         globalState.activeComponent = message.payload;
-        // Optionally broadcast the updated active component.
         chrome.runtime.sendMessage({
           action: 'activeComponentChanged',
           payload: globalState.activeComponent
@@ -48,30 +48,59 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ filesLoaded: globalState.filesLoaded });
       break;
 
-    case 'recordTask':
-      if (message.payload) {
-        const { id, name, objectives, startUrl, steps } = message.payload;
-        recordState.currentTask = {
-          id: id || recordState.currentTask.id, // now including id
-          name: name ?? recordState.currentTask.name,
-          objectives: objectives ?? recordState.currentTask.objectives,
-          startUrl: startUrl ?? recordState.currentTask.startUrl,
-          steps: Array.isArray(steps)
-            ? steps.map((step) => ({
-                id: step.id || '',
-                name: step.name || '',
-                actionsTaken: step.actionsTaken || [],
-                interactableElements: step.interactableElements || [],
-                screenshots: step.screenshots || []
-              }))
-            : recordState.currentTask.steps,
-        };
-        sendResponse({
-          success: true,
-          recordedTask: recordState.currentTask
-        });
+      case 'recordTask': {
+        if (message.payload) {
+          const { id, name, objectives, startUrl, steps, toggleAnswers, activeStepIndex } = message.payload;
+  
+          // If steps are provided, update them entirely.
+          if (steps) {
+            recordState.currentTask = {
+              id: id || recordState.currentTask.id,
+              name: name ?? recordState.currentTask.name,
+              objectives: objectives ?? recordState.currentTask.objectives,
+              startUrl: startUrl ?? recordState.currentTask.startUrl,
+              steps: Array.isArray(steps)
+                ? steps.map((step) => ({
+                    id: step.id || '',
+                    name: step.name || '',
+                    actionsTaken: step.actionsTaken || [],
+                    interactableElements: step.interactableElements || [],
+                    screenshots: step.screenshots || [],
+                    toggleAnswers: step.toggleAnswers || {}
+                  }))
+                : recordState.currentTask.steps,
+              // Update activeStepIndex if provided
+              activeStepIndex: activeStepIndex !== undefined ? activeStepIndex : recordState.currentTask.activeStepIndex,
+            };
+          }
+  
+          // If toggleAnswers are provided, update the correct step.
+          if (toggleAnswers !== undefined) {
+            // Use the activeStepIndex from the payload if provided,
+            // otherwise fall back to the stored activeStepIndex.
+            const index = activeStepIndex !== undefined ? activeStepIndex : recordState.currentTask.activeStepIndex || 0;
+            if (recordState.currentTask.steps && recordState.currentTask.steps.length > index) {
+              recordState.currentTask.steps[index] = {
+                ...recordState.currentTask.steps[index],
+                toggleAnswers: toggleAnswers,
+              };
+            }
+          }
+  
+          // Update the activeStepIndex if provided and not already handled by the steps branch.
+          if (activeStepIndex !== undefined && !steps) {
+            recordState.currentTask.activeStepIndex = activeStepIndex;
+          }
+          
+          sendResponse({
+            success: true,
+            recordedTask: recordState.currentTask,
+          });
+        }
+        break;
       }
-      break;
+  
+    
 
     case 'getRecordState':
       sendResponse({ recordState });
@@ -82,7 +111,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     default:
-      // Unknown action
       break;
   }
 });

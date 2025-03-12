@@ -1,32 +1,51 @@
 import React, { useState } from 'react';
 
-function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent }) {
-  // Removed useDispatch and updateActiveComponent action
-
-  // State for the initial reason input.
+function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setActiveComponent }) {
+  // Consolidated state for toggle answers and reason.
+  const [toggleAnswers, setToggleAnswers] = useState({
+    reason: '',
+    completed: null,
+    closer: null,
+    needsReplan: null,
+  });
+  
   const [reason, setReason] = useState('');
   const [submittedReason, setSubmittedReason] = useState(null);
-
-  // State for toggle answers.
-  const [completed, setCompleted] = useState(null); // "yes" or "no"
-  const [closer, setCloser] = useState(null); // "yes", "no", or "not sure"
-  const [needsReplan, setNeedsReplan] = useState(null); // "yes" or "no"
-
-  // State to control which toggle sections have been revealed.
+  
+  const [completed, setCompleted] = useState(null);
+  const [closer, setCloser] = useState(null);
+  const [needsReplan, setNeedsReplan] = useState(null);
+  
   const [showCompleted, setShowCompleted] = useState(false);
   const [showCloser, setShowCloser] = useState(false);
   const [showNeedsReplan, setShowNeedsReplan] = useState(false);
-
-  // Track the current active toggle.
-  // Valid values: "completed", "closer", "needsReplan", or null.
+  
   const [currentStep, setCurrentStep] = useState(null);
+
+  const updateToggleAnswer = (key, value) => {
+    const newToggleAnswers = { ...toggleAnswers, [key]: value };
+    setToggleAnswers(newToggleAnswers);
+    // Update the background state with the current toggle answers along with activeStepIndex.
+    chrome.runtime.sendMessage(
+      { 
+        action: 'recordTask', 
+        payload: { 
+          toggleAnswers: newToggleAnswers, 
+          activeStepIndex  // <-- Include the current activeStepIndex prop
+        } 
+      },
+      (response) => {
+        console.log(`${key} answer recorded:`, response);
+      }
+    );
+  };
 
   // Handles submitting the reason.
   const handleReasonSubmit = (e) => {
     e.preventDefault();
     if (reason.trim() !== '') {
       setSubmittedReason(reason);
-      // Reveal the first toggle and mark it as active.
+      updateToggleAnswer('reason', reason);
       setShowCompleted(true);
       setCurrentStep('completed');
     }
@@ -35,15 +54,14 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
   // Handles the Completed toggle.
   const handleCompletedChange = (answer) => {
     setCompleted(answer);
+    updateToggleAnswer('completed', answer);
     if (answer === 'yes') {
-      // Only move to End if this is the last step.
       if (isLastStep) {
         setActiveComponent('End');
       } else {
         if (onNext) onNext();
       }
     } else if (answer === 'no') {
-      // Reveal the Closer toggle and set it as active.
       setShowCloser(true);
       setCurrentStep('closer');
     }
@@ -52,12 +70,12 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
   // Handles the Closer toggle.
   const handleCloserChange = (answer) => {
     setCloser(answer);
+    updateToggleAnswer('closer', answer);
     if (answer === 'yes') {
       chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
         window.close();
       });
     } else {
-      // Reveal the Replanning toggle and set it as active.
       setShowNeedsReplan(true);
       setCurrentStep('needsReplan');
     }
@@ -66,6 +84,7 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
   // Handles the Replanning toggle.
   const handleNeedsReplanChange = (answer) => {
     setNeedsReplan(answer);
+    updateToggleAnswer('needsReplan', answer);
     if (answer === 'yes') {
       if (onEnableReplan) onEnableReplan();
     } else {
@@ -75,7 +94,7 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
     }
   };
 
-  // Back navigation functions.
+  // Back navigation functions remain unchanged.
   const goBackFromCloser = () => {
     setShowCloser(false);
     setCloser(null);
@@ -101,7 +120,8 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
             <button
               onClick={() => {
                 setSubmittedReason(null);
-                // Reset all toggle states
+                // Reset reason in toggleAnswers as well.
+                updateToggleAnswer('reason', '');
                 setShowCompleted(false);
                 setShowCloser(false);
                 setShowNeedsReplan(false);
@@ -134,7 +154,6 @@ function StepSubLoop({ onNext, onEnableReplan, isLastStep, setActiveComponent })
           {completed ? (
             <div>
               <p>Your answer: {completed}</p>
-              {/* No back button for the first toggle */}
             </div>
           ) : (
             <>

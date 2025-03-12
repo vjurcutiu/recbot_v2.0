@@ -166,6 +166,7 @@ function Start({ setActiveComponent }) {
         {
           action: 'recordTask',
           payload: {
+            id: activeTask.id, // pass the id along!
             name: activeTask.name,
             objectives: activeTask.objectives,
             startUrl: activeTask.startUrl,

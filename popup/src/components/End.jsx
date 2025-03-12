@@ -7,8 +7,10 @@ function End({ setActiveComponent }) {
   // On mount, retrieve the current task from the background state.
   useEffect(() => {
     chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
+      console.log(response)
       if (response && response.recordState && response.recordState.currentTask) {
         setActiveTask(response.recordState.currentTask);
+        console.log('active task in end', response.recordState.currentTask)
       }
     });
   }, []);
@@ -28,12 +30,13 @@ function End({ setActiveComponent }) {
   };
 
   const handleNextTask = async () => {
-    await completeTask();
+    await completeTask();    
     setActiveComponent('Start');
   };
 
   const handleDone = async () => {
     await completeTask();
+    console.log('task done');
     window.close();
   };
 

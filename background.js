@@ -89,29 +89,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ filesLoaded: globalState.filesLoaded });
       break;
 
-    case 'recordTask':
-      if (message.payload) {
-        const { name, objectives, startUrl, steps } = message.payload;
-        recordState.currentTask = {
-          name: name ?? recordState.currentTask.name,
-          objectives: objectives ?? recordState.currentTask.objectives,
-          startUrl: startUrl ?? recordState.currentTask.startUrl,
-          steps: Array.isArray(steps)
-            ? steps.map((step) => ({
-                id: step.id || '',
-                name: step.name || '',
-                actionsTaken: step.actionsTaken || [],
-                interactableElements: step.interactableElements || [],
-                screenshots: step.screenshots || []
-              }))
-            : recordState.currentTask.steps,
-        };
-        sendResponse({
-          success: true,
-          recordedTask: recordState.currentTask
-        });
-      }
-      break;
+      case 'recordTask':
+        if (message.payload) {
+          const { id, name, objectives, startUrl, steps } = message.payload;
+          recordState.currentTask = {
+            id: id || recordState.currentTask.id, // This now ensures id is stored.
+            name: name ?? recordState.currentTask.name,
+            objectives: objectives ?? recordState.currentTask.objectives,
+            startUrl: startUrl ?? recordState.currentTask.startUrl,
+            steps: Array.isArray(steps)
+              ? steps.map((step) => ({
+                  id: step.id || '',
+                  name: step.name || '',
+                  actionsTaken: step.actionsTaken || [],
+                  interactableElements: step.interactableElements || [],
+                  screenshots: step.screenshots || []
+                }))
+              : recordState.currentTask.steps,
+          };
+          sendResponse({
+            success: true,
+            recordedTask: recordState.currentTask
+          });
+        }
+        break;
 
     case 'getRecordState':
       sendResponse({ recordState });

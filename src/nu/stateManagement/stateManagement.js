@@ -9,9 +9,10 @@ export const globalState = {
 
 export const recordState = {
   currentTask: {
+    id: '', // Added id property
     name: '',
     objectives: [],
-    startUrl: '', // changed from 'url' to 'startUrl'
+    startUrl: '',
     steps: []
   },
 };
@@ -49,11 +50,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'recordTask':
       if (message.payload) {
-        const { name, objectives, startUrl, steps } = message.payload;
+        const { id, name, objectives, startUrl, steps } = message.payload;
         recordState.currentTask = {
+          id: id || recordState.currentTask.id, // now including id
           name: name ?? recordState.currentTask.name,
           objectives: objectives ?? recordState.currentTask.objectives,
-          startUrl: startUrl ?? recordState.currentTask.startUrl, // using startUrl consistently
+          startUrl: startUrl ?? recordState.currentTask.startUrl,
           steps: Array.isArray(steps)
             ? steps.map((step) => ({
                 id: step.id || '',

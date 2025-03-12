@@ -42,7 +42,15 @@ function StepLoop({ setActiveComponent }) {
 
   // Confirm replanning by merging new steps.
   const confirmReplan = () => {
-    setSteps([...steps, ...replannedSteps]);
+    const newSteps = [...steps, ...replannedSteps];
+    setSteps(newSteps);
+    // Record the updated steps in the background.
+    chrome.runtime.sendMessage(
+      { action: 'recordTask', payload: { steps: newSteps } },
+      (response) => {
+        console.log('Task re-recorded:', response);
+      }
+    );
     setIsReplanning(false);
   };
 

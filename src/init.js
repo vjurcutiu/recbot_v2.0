@@ -6,16 +6,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     
     switch (message.action) {
-      case 'start':
-        console.log("Recording started in content script.");
-        // Insert your code to initialize/start recording here.
-        sendResponse({ status: 'started' });
+    case 'start':
+        try {
+            console.log("Recording started in content script.");
+            // (Your code to actually start recording can go here)
+        
+            // Now, notify the background to update actionsTaken with a recording message.
+            chrome.runtime.sendMessage({
+            action: 'updateActionsTaken',
+            payload: { message: "Recording started" }
+            }, (response) => {
+            console.log("updateActionsTaken response:", response);
+            });
+        
+            sendResponse({ status: 'started' });
+        } catch (error) {
+            console.error("Error in start case:", error);
+            sendResponse({ status: 'error', error: error.toString() });
+        }
         break;
+
       case 'stop':
         console.log("Recording stopped in content script.");
         // Insert your code to finalize/stop recording here.
         sendResponse({ status: 'stopped' });
         break;
+
       case 'pause':
         console.log("Recording paused in content script.");
         // Insert your code to pause recording here.

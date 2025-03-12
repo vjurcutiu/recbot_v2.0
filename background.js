@@ -89,30 +89,65 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ filesLoaded: globalState.filesLoaded });
       break;
 
-      case 'recordTask':
-        if (message.payload) {
-          const { id, name, objectives, startUrl, steps } = message.payload;
-          recordState.currentTask = {
-            id: id || recordState.currentTask.id, // This now ensures id is stored.
-            name: name ?? recordState.currentTask.name,
-            objectives: objectives ?? recordState.currentTask.objectives,
-            startUrl: startUrl ?? recordState.currentTask.startUrl,
-            steps: Array.isArray(steps)
-              ? steps.map((step) => ({
-                  id: step.id || '',
-                  name: step.name || '',
-                  actionsTaken: step.actionsTaken || [],
-                  interactableElements: step.interactableElements || [],
-                  screenshots: step.screenshots || []
-                }))
-              : recordState.currentTask.steps,
-          };
-          sendResponse({
-            success: true,
-            recordedTask: recordState.currentTask
-          });
-        }
+    case 'recordTask':
+      if (message.payload) {
+        const { id, name, objectives, startUrl, steps } = message.payload;
+        recordState.currentTask = {
+          id: id || recordState.currentTask.id, // This now ensures id is stored.
+          name: name ?? recordState.currentTask.name,
+          objectives: objectives ?? recordState.currentTask.objectives,
+          startUrl: startUrl ?? recordState.currentTask.startUrl,
+          steps: Array.isArray(steps)
+            ? steps.map((step) => ({
+                id: step.id || '',
+                name: step.name || '',
+                actionsTaken: step.actionsTaken || [],
+                interactableElements: step.interactableElements || [],
+                screenshots: step.screenshots || []
+              }))
+            : recordState.currentTask.steps,
+        };
+        sendResponse({
+          success: true,
+          recordedTask: recordState.currentTask
+        });
+      }
+      break;
+
+    case 'updateActionsTaken': {
+      const payload = message.payload;
+      if (!payload || typeof payload.message !== 'string') {
+        console.error("updateActionsTaken received an invalid payload:", payload);
+        sendResponse({ success: false, error: "Invalid payload" });
         break;
+      }
+      const updateMessage = payload.message;
+      console.log("Received updateActionsTaken message:", updateMessage);
+      
+      // Use the activeStepIndex (default is 0 if not already set).
+      const currentStepIndex = recordState.currentTask.activeStepIndex || 0;
+      
+      if (recordState.currentTask.steps &&
+          recordState.currentTask.steps[currentStepIndex]) {
+        recordState.currentTask.steps[currentStepIndex].actionsTaken.push(updateMessage);
+        console.log("Updated actionsTaken for existing step:", recordState.currentTask.steps[currentStepIndex].actionsTaken);
+      } else {
+        const newStep = {
+          id: '',
+          name: 'Step 1',
+          actionsTaken: [updateMessage],
+          interactableElements: [],
+          screenshots: []
+        };
+        recordState.currentTask.steps = recordState.currentTask.steps || [];
+        recordState.currentTask.steps.push(newStep);
+        recordState.currentTask.activeStepIndex = recordState.currentTask.steps.length - 1;
+        console.log("Created new step with actionsTaken:", newStep.actionsTaken);
+      }
+      
+      sendResponse({ success: true });
+      break;
+    }
 
     case 'getRecordState':
       sendResponse({ recordState });
@@ -143,15 +178,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       globalState.recording = true;
       chrome.storage.local.set({ recording: true }, () => {
         console.log('Recording started via UI.');
-        // Since the message comes from the popup, use the global recording tab id.
         const tabId = globalState.recordingTabId;
+        console.log("Global recording tab id:", tabId);
         if (tabId) {
           let context = getContext(tabId);
           if (!context) {
+            console.warn("No context found for tab, creating new one.");
             context = createContext(tabId);
           }
           context.recording = true;
-          chrome.tabs.sendMessage(tabId, { action: 'start' });
+          
+          // Wait for the content script to be ready
+          ensureContentScript(tabId, () => {
+            chrome.tabs.sendMessage(tabId, { action: 'start' }, (response) => {
+              if (chrome.runtime.lastError) {
+                console.error("Error sending 'start' message:", chrome.runtime.lastError.message);
+              } else {
+                console.log("Start message sent successfully. Response:", response);
+              }
+            });
+          });
         } else {
           console.error("No recording tab found in global state.");
         }

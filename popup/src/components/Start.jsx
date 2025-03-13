@@ -137,11 +137,14 @@ function Start({ setActiveComponent }) {
 
   // Helper to update the global filesLoaded state.
   const updateFilesLoaded = (value) => {
-    chrome.runtime.sendMessage({ action: 'setFilesLoaded', payload: value }, (response) => {
-      if (response && response.success) {
-        setFilesLoaded(response.filesLoaded);
+    chrome.runtime.sendMessage(
+      { action: 'setFilesLoaded', payload: value },
+      (response) => {
+        if (response && response.success) {
+          setFilesLoaded(response.filesLoaded);
+        }
       }
-    });
+    );
   };
 
   // Opens the file prompt.
@@ -161,20 +164,33 @@ function Start({ setActiveComponent }) {
         }
       );
 
-      // Record the task in the background state.
+      // Update basic task info.
       chrome.runtime.sendMessage(
         {
-          action: 'recordTask',
+          action: 'updateTaskInfo',
           payload: {
             id: activeTask.id, // pass the id along!
             name: activeTask.name,
             objectives: activeTask.objectives,
             startUrl: activeTask.startUrl,
-            steps: [] // Start with an empty steps array.
-          }
+          },
         },
         (response) => {
-          console.log('Task recorded:', response);
+          console.log('Task info updated:', response);
+        }
+      );
+
+      // Initialize steps and active step index.
+      chrome.runtime.sendMessage(
+        {
+          action: 'updateTaskSteps',
+          payload: {
+            steps: [], // Start with an empty steps array.
+            activeStepIndex: 0,
+          },
+        },
+        (response) => {
+          console.log('Task steps updated:', response);
         }
       );
     }

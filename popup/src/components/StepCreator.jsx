@@ -10,30 +10,35 @@ function StepCreator({ setActiveComponent }) {
     chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
       if (response && response.recordState) {
         setCurrentTask(response.recordState.currentTask);
+        // To capture a snapshot rather than a reference, you can do:
+        console.log(JSON.parse(JSON.stringify(response.recordState.currentTask)));
       }
     });
   }, []);
 
   const handleDone = () => {
-    // If no steps are added, prompt the user to add at least one step.
     if (steps.length === 0) {
       alert("Please add at least one step before clicking done.");
       return;
     }
-  
-    // Update the current task with the new steps in the background state.
+
+    // Update steps and activeStepIndex using the new messaging system.
     chrome.runtime.sendMessage(
-      { action: 'recordTask', payload: { steps } },
+      {
+        action: 'updateTaskSteps',
+        payload: {
+          steps,
+          activeStepIndex: currentTask.activeStepIndex,
+        },
+      },
       (response) => {
-        console.log('Task recorded:', response);
+        console.log('Task steps updated:', response);
       }
     );
-  
+
     // Switch active component to "StepLoop".
     setActiveComponent('StepLoop');
-  
-    console.log('currentTask:', currentTask);
-  
+
     // Open a new tab with the task's start URL if available.
     if (currentTask.startUrl) {
       chrome.runtime.sendMessage(
@@ -45,7 +50,7 @@ function StepCreator({ setActiveComponent }) {
     } else {
       console.warn("No start URL provided in currentTask");
     }
-  
+
     // Trigger recording from the UI.
     chrome.runtime.sendMessage(
       { action: 'start-recording-from-ui' },
@@ -55,7 +60,6 @@ function StepCreator({ setActiveComponent }) {
       }
     );
   };
-  
 
   return (
     <div>

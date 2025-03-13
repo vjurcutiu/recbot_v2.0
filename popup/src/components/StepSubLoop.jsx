@@ -22,16 +22,16 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
   
   const [currentStep, setCurrentStep] = useState(null);
 
+  // Update toggle answers in background using the action "updateToggleAnswers".
   const updateToggleAnswer = (key, value) => {
     const newToggleAnswers = { ...toggleAnswers, [key]: value };
     setToggleAnswers(newToggleAnswers);
-    // Update the background state with the current toggle answers along with activeStepIndex.
     chrome.runtime.sendMessage(
       { 
-        action: 'recordTask', 
+        action: 'updateToggleAnswers', 
         payload: { 
           toggleAnswers: newToggleAnswers, 
-          activeStepIndex  // <-- Include the current activeStepIndex prop
+          activeStepIndex
         } 
       },
       (response) => {

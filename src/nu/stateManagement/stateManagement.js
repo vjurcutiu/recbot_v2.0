@@ -13,8 +13,8 @@ export const recordState = {
     name: '',
     objectives: [],
     startUrl: '',
+    activeStepIndex: 0, 
     steps: [],
-    activeStepIndex: 0,  // <-- Added activeStepIndex here
   },
 };
 
@@ -48,54 +48,54 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ filesLoaded: globalState.filesLoaded });
       break;
 
-      case 'recordTask': {
-        if (message.payload) {
-          const { id, name, objectives, startUrl, steps, toggleAnswers, activeStepIndex } = message.payload;
+      case 'updateTaskInfo': {
+        // Update only basic task info
+        const { id, name, objectives, startUrl } = message.payload;
+        recordState.currentTask = {
+          ...recordState.currentTask,
+          id: id !== undefined ? id : recordState.currentTask.id,
+          name: name !== undefined ? name : recordState.currentTask.name,
+          objectives: objectives !== undefined ? objectives : recordState.currentTask.objectives,
+          startUrl: startUrl !== undefined ? startUrl : recordState.currentTask.startUrl,
+        };
+        sendResponse({ success: true, recordedTask: recordState.currentTask });
+        break;
+      }
   
-          // If steps are provided, update them entirely.
-          if (steps) {
-            recordState.currentTask = {
-              id: id || recordState.currentTask.id,
-              name: name ?? recordState.currentTask.name,
-              objectives: objectives ?? recordState.currentTask.objectives,
-              startUrl: startUrl ?? recordState.currentTask.startUrl,
-              steps: Array.isArray(steps)
-                ? steps.map((step) => ({
-                    id: step.id || '',
-                    name: step.name || '',
-                    actionsTaken: step.actionsTaken || [],
-                    interactableElements: step.interactableElements || [],
-                    screenshots: step.screenshots || [],
-                    toggleAnswers: step.toggleAnswers || {}
-                  }))
-                : recordState.currentTask.steps,
-              // Update activeStepIndex if provided
-              activeStepIndex: activeStepIndex !== undefined ? activeStepIndex : recordState.currentTask.activeStepIndex,
-            };
-          }
+      case 'updateTaskSteps': {
+        // Update steps separately
+        const { steps, activeStepIndex } = message.payload;
+        if (steps !== undefined) {
+          recordState.currentTask.steps = Array.isArray(steps)
+            ? steps.map((step) => ({
+                id: step.id || '',
+                name: step.name || '',
+                actionsTaken: step.actionsTaken || [],
+                interactableElements: step.interactableElements || [],
+                screenshots: step.screenshots || [],
+                toggleAnswers: step.toggleAnswers || {},
+              }))
+            : recordState.currentTask.steps;
+        }
+        if (activeStepIndex !== undefined) {
+          recordState.currentTask.activeStepIndex = activeStepIndex;
+        }
+        sendResponse({ success: true, recordedTask: recordState.currentTask });
+        break;
+      }
   
-          // If toggleAnswers are provided, update the correct step.
-          if (toggleAnswers !== undefined) {
-            // Use the activeStepIndex from the payload if provided,
-            // otherwise fall back to the stored activeStepIndex.
-            const index = activeStepIndex !== undefined ? activeStepIndex : recordState.currentTask.activeStepIndex || 0;
-            if (recordState.currentTask.steps && recordState.currentTask.steps.length > index) {
-              recordState.currentTask.steps[index] = {
-                ...recordState.currentTask.steps[index],
-                toggleAnswers: toggleAnswers,
-              };
-            }
-          }
-  
-          // Update the activeStepIndex if provided and not already handled by the steps branch.
-          if (activeStepIndex !== undefined && !steps) {
-            recordState.currentTask.activeStepIndex = activeStepIndex;
-          }
-          
-          sendResponse({
-            success: true,
-            recordedTask: recordState.currentTask,
-          });
+      case 'updateToggleAnswers': {
+        // Update toggle answers for a specific step
+        const { toggleAnswers, activeStepIndex } = message.payload;
+        const index = activeStepIndex !== undefined ? activeStepIndex : recordState.currentTask.activeStepIndex || 0;
+        if (recordState.currentTask.steps && recordState.currentTask.steps.length > index) {
+          recordState.currentTask.steps[index] = {
+            ...recordState.currentTask.steps[index],
+            toggleAnswers,
+          };
+          sendResponse({ success: true, recordedTask: recordState.currentTask });
+        } else {
+          sendResponse({ success: false, error: 'Step not found' });
         }
         break;
       }

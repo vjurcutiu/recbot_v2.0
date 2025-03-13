@@ -19,6 +19,7 @@ function StepLoop({ setActiveComponent }) {
         setCurrentTask(task);
         setSteps(task.steps || []);
         setActiveStepIndex(task.activeStepIndex || 0);
+        console.log(response);
       }
     });
   }, []);
@@ -29,11 +30,14 @@ function StepLoop({ setActiveComponent }) {
       const newIndex = activeStepIndex + 1;
       // Update local state immediately for responsiveness.
       setActiveStepIndex(newIndex);
-      // Also update the background state.
+      // Also update the background state with the new activeStepIndex.
       chrome.runtime.sendMessage(
-        { action: 'recordTask', payload: { activeStepIndex: newIndex } },
+        { action: 'updateTaskSteps', payload: { activeStepIndex: newIndex } },
         (response) => {
           console.log('Active step index updated:', response);
+          chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
+            window.close();
+          });
         }
       );
     }
@@ -51,7 +55,7 @@ function StepLoop({ setActiveComponent }) {
       setIsReplanning(true);
       // Update background state with the truncated steps.
       chrome.runtime.sendMessage(
-        { action: 'recordTask', payload: { steps: truncatedSteps } },
+        { action: 'updateTaskSteps', payload: { steps: truncatedSteps } },
         (response) => {
           console.log('Steps truncated for replanning:', response);
         }
@@ -64,7 +68,7 @@ function StepLoop({ setActiveComponent }) {
     const newSteps = [...steps, ...replannedSteps];
     setSteps(newSteps);
     chrome.runtime.sendMessage(
-      { action: 'recordTask', payload: { steps: newSteps } },
+      { action: 'updateTaskSteps', payload: { steps: newSteps } },
       (response) => {
         console.log('Task re-recorded with new steps:', response);
       }
@@ -96,7 +100,7 @@ function StepLoop({ setActiveComponent }) {
                   setSteps(updatedSteps);
                   // Persist the updated step names to the background.
                   chrome.runtime.sendMessage(
-                    { action: 'recordTask', payload: { steps: updatedSteps } },
+                    { action: 'updateTaskSteps', payload: { steps: updatedSteps } },
                     (response) => {
                       console.log('Step name updated:', response);
                     }
@@ -122,7 +126,7 @@ function StepLoop({ setActiveComponent }) {
       ) : (
         <StepSubLoop
           key={activeStepIndex}
-          activeStepIndex={activeStepIndex} // pass the activeStepIndex prop
+          activeStepIndex={activeStepIndex}
           onNext={handleNext}
           onEnableReplan={handleEnableReplan}
           isLastStep={activeStepIndex === steps.length - 1}

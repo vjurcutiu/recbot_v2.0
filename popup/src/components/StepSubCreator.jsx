@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function StepSubCreator({ steps, setSteps, baseStepNumber = 0 }) {
+function StepSubCreator({ steps, setSteps, baseStepNumber = 0, activeStepIndex = 0 }) {
   const [currentInput, setCurrentInput] = useState('');
   const [editingIndex, setEditingIndex] = useState(-1);
   const [editingText, setEditingText] = useState('');
@@ -13,6 +13,16 @@ function StepSubCreator({ steps, setSteps, baseStepNumber = 0 }) {
     }));
   };
 
+  // Helper to update steps in the background state.
+  const updateStepsInBackground = (newSteps) => {
+    chrome.runtime.sendMessage(
+      { action: 'updateTaskSteps', payload: { steps: newSteps, activeStepIndex } },
+      (response) => {
+        console.log('Steps updated:', response);
+      }
+    );
+  };
+
   const handleInputChange = (e) => {
     setCurrentInput(e.target.value);
   };
@@ -22,6 +32,7 @@ function StepSubCreator({ steps, setSteps, baseStepNumber = 0 }) {
       const newStep = { name: currentInput };
       const newSteps = recalcIds([...steps, newStep]);
       setSteps(newSteps);
+      updateStepsInBackground(newSteps);
       setCurrentInput('');
     }
   };
@@ -39,7 +50,9 @@ function StepSubCreator({ steps, setSteps, baseStepNumber = 0 }) {
 
   const handleDeleteStep = (index) => {
     const newSteps = steps.filter((_, i) => i !== index);
-    setSteps(recalcIds(newSteps));
+    const recalcedSteps = recalcIds(newSteps);
+    setSteps(recalcedSteps);
+    updateStepsInBackground(recalcedSteps);
   };
 
   const handleEditStep = (index) => {
@@ -56,7 +69,9 @@ function StepSubCreator({ steps, setSteps, baseStepNumber = 0 }) {
       const newSteps = steps.map((step, i) =>
         i === index ? { ...step, name: editingText } : step
       );
-      setSteps(recalcIds(newSteps));
+      const recalcedSteps = recalcIds(newSteps);
+      setSteps(recalcedSteps);
+      updateStepsInBackground(recalcedSteps);
       setEditingIndex(-1);
       setEditingText('');
     }

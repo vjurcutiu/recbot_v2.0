@@ -14,6 +14,7 @@ export const recordState = {
     objectives: [],
     startUrl: '',
     activeStepIndex: 0, 
+    activeFragmentIndex: 0, // New property to track the active fragment index.
     steps: [],
   },
 };
@@ -82,7 +83,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               return {
                 ...step,
                 fragments,
-                // Preserve step ID, name and other core properties here.
+                // Preserve step ID, name and other core properties.
               };
             })
           : recordState.currentTask.steps;
@@ -154,6 +155,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else {
         sendResponse({ success: false, error: 'Fragment not found' });
       }
+      break;
+    }
+  
+    // New message: Set the active fragment index.
+    case 'setActiveFragmentIndex': {
+      const { activeFragmentIndex } = message.payload;
+      recordState.currentTask.activeFragmentIndex = activeFragmentIndex;
+      sendResponse({ success: true, activeFragmentIndex });
+      break;
+    }
+
+    // New message: Return both active step and active fragment indices.
+    case 'getActiveIndices': {
+      sendResponse({
+        activeStepIndex: recordState.currentTask.activeStepIndex,
+        activeFragmentIndex: recordState.currentTask.activeFragmentIndex || 0
+      });
       break;
     }
   

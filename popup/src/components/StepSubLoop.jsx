@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setActiveComponent }) {
   // Consolidated state for toggle answers and reason.
@@ -21,6 +21,18 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
   const [showNeedsReplan, setShowNeedsReplan] = useState(false);
   
   const [currentStep, setCurrentStep] = useState(null);
+  // New state to track the active fragment index (defaulting to 0).
+  const [activeFragmentIndex, setActiveFragmentIndex] = useState(0);
+
+  useEffect(() => {
+    chrome.runtime.sendMessage({ action: 'getActiveIndices' }, (response) => {
+      if (response) {
+        // Assuming response returns { activeStepIndex, activeFragmentIndex }
+        setActiveFragmentIndex(response.activeFragmentIndex);
+        // You can also check if response.activeStepIndex matches the prop activeStepIndex if needed.
+      }
+    });
+  }, []);
 
   // Update toggle answers in background using the action "updateToggleAnswers".
   const updateToggleAnswer = (key, value) => {
@@ -31,7 +43,8 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
         action: 'updateToggleAnswers', 
         payload: { 
           toggleAnswers: newToggleAnswers, 
-          activeStepIndex
+          activeStepIndex,
+          fragmentIndex: activeFragmentIndex
         } 
       },
       (response) => {
@@ -79,7 +92,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
           payload: { 
             stepIndex: activeStepIndex, 
             fragment: {
-              // You can include more data if needed; here we snapshot the toggleAnswers for the fragment.
+              // Snapshot the toggleAnswers for the fragment.
               toggleAnswers: { ...toggleAnswers, closer: answer },
               actionsTaken: [],
               interactableElements: [],

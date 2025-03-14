@@ -48,60 +48,115 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ filesLoaded: globalState.filesLoaded });
       break;
 
-      case 'updateTaskInfo': {
-        // Update only basic task info
-        const { id, name, objectives, startUrl } = message.payload;
-        recordState.currentTask = {
-          ...recordState.currentTask,
-          id: id !== undefined ? id : recordState.currentTask.id,
-          name: name !== undefined ? name : recordState.currentTask.name,
-          objectives: objectives !== undefined ? objectives : recordState.currentTask.objectives,
-          startUrl: startUrl !== undefined ? startUrl : recordState.currentTask.startUrl,
-        };
+    case 'updateTaskInfo': {
+      // Update only basic task info (ID, name, objectives, startUrl)
+      const { id, name, objectives, startUrl } = message.payload;
+      recordState.currentTask = {
+        ...recordState.currentTask,
+        id: id !== undefined ? id : recordState.currentTask.id,
+        name: name !== undefined ? name : recordState.currentTask.name,
+        objectives: objectives !== undefined ? objectives : recordState.currentTask.objectives,
+        startUrl: startUrl !== undefined ? startUrl : recordState.currentTask.startUrl,
+      };
+      sendResponse({ success: true, recordedTask: recordState.currentTask });
+      break;
+    }
+  
+    case 'updateTaskSteps': {
+      // Update steps separately. For each step, if no fragments exist,
+      // create a default fragment that contains the properties that were
+      // formerly stored at the step level.
+      const { steps, activeStepIndex } = message.payload;
+      if (steps !== undefined) {
+        recordState.currentTask.steps = Array.isArray(steps)
+          ? steps.map((step) => {
+              const fragments = Array.isArray(step.fragments) && step.fragments.length
+                ? step.fragments
+                : [{
+                    actionsTaken: step.actionsTaken || [],
+                    interactableElements: step.interactableElements || [],
+                    screenshots: step.screenshots || [],
+                    toggleAnswers: step.toggleAnswers || {},
+                    fragmentIndex: 0,
+                  }];
+              return {
+                ...step,
+                fragments,
+                // Preserve step ID, name and other core properties here.
+              };
+            })
+          : recordState.currentTask.steps;
+      }
+      if (activeStepIndex !== undefined) {
+        recordState.currentTask.activeStepIndex = activeStepIndex;
+      }
+      sendResponse({ success: true, recordedTask: recordState.currentTask });
+      break;
+    }
+  
+    case 'updateToggleAnswers': {
+      // Now update toggleAnswers at the fragment level rather than on the step.
+      // Expects payload: { toggleAnswers: object, activeStepIndex: number, fragmentIndex: number }
+      const { toggleAnswers, activeStepIndex, fragmentIndex } = message.payload;
+      const step = recordState.currentTask.steps[activeStepIndex];
+      if (step && Array.isArray(step.fragments) && step.fragments[fragmentIndex] !== undefined) {
+        step.fragments[fragmentIndex].toggleAnswers = toggleAnswers;
         sendResponse({ success: true, recordedTask: recordState.currentTask });
-        break;
+      } else {
+        sendResponse({ success: false, error: 'Fragment not found' });
       }
-  
-      case 'updateTaskSteps': {
-        // Update steps separately
-        const { steps, activeStepIndex } = message.payload;
-        if (steps !== undefined) {
-          recordState.currentTask.steps = Array.isArray(steps)
-            ? steps.map((step) => ({
-                id: step.id || '',
-                name: step.name || '',
-                actionsTaken: step.actionsTaken || [],
-                interactableElements: step.interactableElements || [],
-                screenshots: step.screenshots || [],
-                toggleAnswers: step.toggleAnswers || {},
-              }))
-            : recordState.currentTask.steps;
-        }
-        if (activeStepIndex !== undefined) {
-          recordState.currentTask.activeStepIndex = activeStepIndex;
-        }
-        sendResponse({ success: true, recordedTask: recordState.currentTask });
-        break;
-      }
-  
-      case 'updateToggleAnswers': {
-        // Update toggle answers for a specific step
-        const { toggleAnswers, activeStepIndex } = message.payload;
-        const index = activeStepIndex !== undefined ? activeStepIndex : recordState.currentTask.activeStepIndex || 0;
-        if (recordState.currentTask.steps && recordState.currentTask.steps.length > index) {
-          recordState.currentTask.steps[index] = {
-            ...recordState.currentTask.steps[index],
-            toggleAnswers,
-          };
-          sendResponse({ success: true, recordedTask: recordState.currentTask });
-        } else {
-          sendResponse({ success: false, error: 'Step not found' });
-        }
-        break;
-      }
-  
-    
+      break;
+    }
 
+    // Listener to add a fragment to a specific step.
+    case 'addFragment': {
+      // Expects payload: { stepIndex: number, fragment: object }
+      const { stepIndex, fragment } = message.payload;
+      const step = recordState.currentTask.steps[stepIndex];
+      if (step) {
+        if (!Array.isArray(step.fragments)) {
+          step.fragments = [{
+            actionsTaken: step.actionsTaken || [],
+            interactableElements: step.interactableElements || [],
+            screenshots: step.screenshots || [],
+            toggleAnswers: step.toggleAnswers || {},
+            fragmentIndex: 0,
+          }];
+        }
+        const newFragmentIndex = step.fragments.length;
+        const newFragment = { 
+          actionsTaken: fragment.actionsTaken || [], 
+          interactableElements: fragment.interactableElements || [],
+          screenshots: fragment.screenshots || [],
+          toggleAnswers: fragment.toggleAnswers || {},
+          fragmentIndex: newFragmentIndex,
+        };
+        step.fragments.push(newFragment);
+        sendResponse({ success: true, addedFragment: newFragment });
+      } else {
+        sendResponse({ success: false, error: 'Step not found' });
+      }
+      break;
+    }
+
+    // Listener to update a specific fragment.
+    case 'updateFragment': {
+      // Expects payload: { stepIndex: number, fragmentIndex: number, fragmentData: object }
+      const { stepIndex, fragmentIndex, fragmentData } = message.payload;
+      const step = recordState.currentTask.steps[stepIndex];
+      if (step && Array.isArray(step.fragments) && step.fragments[fragmentIndex] !== undefined) {
+        step.fragments[fragmentIndex] = {
+          ...step.fragments[fragmentIndex],
+          ...fragmentData,
+          fragmentIndex, // ensure index remains unchanged
+        };
+        sendResponse({ success: true, updatedFragment: step.fragments[fragmentIndex] });
+      } else {
+        sendResponse({ success: false, error: 'Fragment not found' });
+      }
+      break;
+    }
+  
     case 'getRecordState':
       sendResponse({ recordState });
       break;

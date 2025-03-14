@@ -72,9 +72,31 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
     setCloser(answer);
     updateToggleAnswer('closer', answer);
     if (answer === 'yes') {
-      chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
-        window.close();
-      });
+      // Create fragment, resume recording and close window
+      chrome.runtime.sendMessage(
+        { 
+          action: 'addFragment', 
+          payload: { 
+            stepIndex: activeStepIndex, 
+            fragment: {
+              // You can include more data if needed; here we snapshot the toggleAnswers for the fragment.
+              toggleAnswers: { ...toggleAnswers, closer: answer },
+              actionsTaken: [],
+              interactableElements: [],
+              screenshots: []
+            }
+          } 
+        },
+        (response) => {
+          if (response && response.success) {
+            chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
+              window.close();
+            });
+          } else {
+            console.error('Error adding fragment:', response && response.error);
+          }
+        }
+      );
     } else {
       setShowNeedsReplan(true);
       setCurrentStep('needsReplan');
@@ -88,9 +110,30 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
     if (answer === 'yes') {
       if (onEnableReplan) onEnableReplan();
     } else {
-      chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
-        window.close();
-      });
+      // Create fragment, resume recording and close window
+      chrome.runtime.sendMessage(
+        { 
+          action: 'addFragment', 
+          payload: { 
+            stepIndex: activeStepIndex, 
+            fragment: {
+              toggleAnswers: { ...toggleAnswers, needsReplan: answer },
+              actionsTaken: [],
+              interactableElements: [],
+              screenshots: []
+            }
+          } 
+        },
+        (response) => {
+          if (response && response.success) {
+            chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
+              window.close();
+            });
+          } else {
+            console.error('Error adding fragment:', response && response.error);
+          }
+        }
+      );
     }
   };
 

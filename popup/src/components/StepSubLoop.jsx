@@ -80,6 +80,15 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
     }
   };
 
+  const updateActiveFragmentIndex = (newIndex) => {
+    chrome.runtime.sendMessage(
+      { action: 'setActiveFragmentIndex', payload: { activeFragmentIndex: newIndex } },
+      (response) => {
+        console.log('Active fragment index updated:', response);
+      }
+    );
+  };
+
   // Handles the Closer toggle.
   const handleCloserChange = (answer) => {
     setCloser(answer);
@@ -102,6 +111,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
         },
         (response) => {
           if (response && response.success) {
+            updateActiveFragmentIndex(response.addedFragment.fragmentIndex);
             chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
               window.close();
             });
@@ -139,6 +149,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
         },
         (response) => {
           if (response && response.success) {
+            updateActiveFragmentIndex(response.addedFragment.fragmentIndex);
             chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
               window.close();
             });

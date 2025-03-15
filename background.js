@@ -200,7 +200,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     case 'resumeRecording': {
-      // Use the global recording tab id.
       const tabId = globalState.recordingTabId;
       if (tabId) {
         let context = getContext(tabId);
@@ -209,7 +208,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           globalState.recording = true;
           chrome.storage.local.set({ recording: true }, () => {
             console.log(`Recording resumed in tab ${tabId}`, context);
-            sendResponse({ success: true, recording: context.recording });
+    
+            // Ensure content script is available before sending resume message
+            ensureContentScript(tabId, () => {
+              chrome.tabs.sendMessage(tabId, { action: 'resume' }, (response) => {
+                if (chrome.runtime.lastError) {
+                  console.error(`Error sending 'resume' message: ${chrome.runtime.lastError.message}`);
+                  sendResponse({ success: false, error: 'Failed to send resume message' });
+                } else {
+                  console.log(`Recording resumed on tab ${tabId}:`, response);
+                  sendResponse({ success: true, recording: true });
+                }
+              });
+            });
           });
         } else {
           console.error(`No active context for tab ${tabId}. Resume ignored.`);

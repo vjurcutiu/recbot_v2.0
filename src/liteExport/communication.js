@@ -15,7 +15,16 @@ export function setupCommunication({ initializeTracking, captureInteractableElem
           sendResponse({ status: "lite tracking stopped" });
         } else if (message.action === "exportLite") {
           sendResponse({ status: "export not handled here" });
-        } else if (message.action === "clearLiteEvents") {
+        } else if (message.action === "resume") {
+          initializeTracking();
+          sendResponse({ status: "lite tracking resumed" });
+        }        
+        else if (message.action === "pause") {
+          destroyTracking();
+          sendResponse({ status: "lite tracking paused" });
+        }
+        
+        else if (message.action === "clearLiteEvents") {
           // Not used in this new pattern.
         }
       } catch (err) {

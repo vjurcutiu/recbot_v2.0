@@ -8,14 +8,13 @@ export function markUserInteraction() {
   setTimeout(() => { userInteracted = false; }, 500);
 }
 
-export function logEvent(type, data, stepIndex = 0, fragmentIndex = 0) {
+export function logEvent(type, data) {
   const eventRecord = { type, timestamp: Date.now(), ...data };
   chrome.runtime.sendMessage({
     action: "updateActionsTaken",
     payload: {
       liteEvent: eventRecord,
-      stepIndex,        // The index of the step you want to update.
-      fragmentIndex,    // The index of the fragment within that step.
+      // No indices provided; the background script will use its state.
     }
   });
 

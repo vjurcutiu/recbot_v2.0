@@ -114,41 +114,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       break;
 
-    case 'updateActionsTaken': {
-      const payload = message.payload;
-      if (!payload || typeof payload.message !== 'string') {
-        console.error("updateActionsTaken received an invalid payload:", payload);
-        sendResponse({ success: false, error: "Invalid payload" });
-        break;
-      }
-      const updateMessage = payload.message;
-      console.log("Received updateActionsTaken message:", updateMessage);
-      
-      // Use the activeStepIndex (default is 0 if not already set).
-      const currentStepIndex = recordState.currentTask.activeStepIndex || 0;
-      
-      if (recordState.currentTask.steps &&
-          recordState.currentTask.steps[currentStepIndex]) {
-        recordState.currentTask.steps[currentStepIndex].actionsTaken.push(updateMessage);
-        console.log("Updated actionsTaken for existing step:", recordState.currentTask.steps[currentStepIndex].actionsTaken);
-      } else {
-        const newStep = {
-          id: '',
-          name: 'Step 1',
-          actionsTaken: [updateMessage],
-          interactableElements: [],
-          screenshots: []
-        };
-        recordState.currentTask.steps = recordState.currentTask.steps || [];
-        recordState.currentTask.steps.push(newStep);
-        recordState.currentTask.activeStepIndex = recordState.currentTask.steps.length - 1;
-        console.log("Created new step with actionsTaken:", newStep.actionsTaken);
-      }
-      
-      sendResponse({ success: true });
-      break;
-    }
-
     case 'getRecordState':
       sendResponse({ recordState });
       break;

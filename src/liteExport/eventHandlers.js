@@ -8,10 +8,17 @@ export function markUserInteraction() {
   setTimeout(() => { userInteracted = false; }, 500);
 }
 
-export function logEvent(type, data) {
+export function logEvent(type, data, stepIndex = 0, fragmentIndex = 0) {
   const eventRecord = { type, timestamp: Date.now(), ...data };
-  chrome.runtime.sendMessage({ action: "recordLiteEvent", liteEvent: eventRecord });
-  // Trigger screenshot for specific event types
+  chrome.runtime.sendMessage({
+    action: "updateActionsTaken",
+    payload: {
+      liteEvent: eventRecord,
+      stepIndex,        // The index of the step you want to update.
+      fragmentIndex,    // The index of the fragment within that step.
+    }
+  });
+
   if (type === "pageLoad" || type === "scrollMovement" || type === "domMutation") {
     triggerScreenshot(type);
   }

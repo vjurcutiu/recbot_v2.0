@@ -174,7 +174,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       break;
     }
-  
+
+    case 'updateActionsTaken': {
+      // If indexes are not provided, use the stored values
+      const {
+        liteEvent,
+        stepIndex = recordState.currentTask.activeStepIndex || 0,
+        fragmentIndex = recordState.currentTask.activeFragmentIndex || 0,
+      } = message.payload;
+      console.log("Logging event at step", stepIndex, "fragment", fragmentIndex);
+    
+      // Proceed with updating the state using these indexes...
+      if (recordState.currentTask.steps && recordState.currentTask.steps[stepIndex]) {
+        const step = recordState.currentTask.steps[stepIndex];
+        if (Array.isArray(step.fragments) && step.fragments[fragmentIndex]) {
+          step.fragments[fragmentIndex].actionsTaken.push(liteEvent);
+          console.log("Updated actionsTaken:", step.fragments[fragmentIndex].actionsTaken);
+        } else {
+          // Optionally create a new fragment if not found
+          const newFragment = {
+            actionsTaken: [liteEvent],
+            interactableElements: [],
+            screenshots: [],
+            toggleAnswers: {},
+            fragmentIndex: fragmentIndex,
+          };
+          step.fragments = step.fragments || [];
+          step.fragments[fragmentIndex] = newFragment;
+          console.log("Created new fragment with actionsTaken:", newFragment.actionsTaken);
+        }
+        sendResponse({ success: true });
+      } else {
+        console.error("Step not found for index:", stepIndex);
+        sendResponse({ success: false, error: "Step not found" });
+      }
+      break;
+    }
+
+    case 'recordInteractableElements': {
+      const { interactableElements } = message.payload;
+      // Use the active step and fragment indices, defaulting to 0 if not set.
+      const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
+      const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;
+      const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
+      if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex]) {
+        // Update the interactableElements for the active fragment.
+        step.fragments[activeFragmentIndex].interactableElements = interactableElements;
+        console.log("Updated interactableElements:", step.fragments[activeFragmentIndex].interactableElements);
+        sendResponse({ success: true, updatedInteractables: step.fragments[activeFragmentIndex].interactableElements });
+      } else {
+        console.error("Active step or fragment not found for recordInteractableElements.");
+        sendResponse({ success: false, error: "Active step or fragment not found" });
+      }
+      break;
+    }
+    
+
     case 'getRecordState':
       sendResponse({ recordState });
       break;

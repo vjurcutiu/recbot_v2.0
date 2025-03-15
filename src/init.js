@@ -1,3 +1,5 @@
+import './liteExport/main.js';
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'ping') {
       // Respond to the ping so that ensureContentScript knows we're ready.
@@ -12,12 +14,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // (Your code to actually start recording can go here)
         
             // Now, notify the background to update actionsTaken with a recording message.
-            chrome.runtime.sendMessage({
-            action: 'updateActionsTaken',
-            payload: { message: "Recording started" }
-            }, (response) => {
-            console.log("updateActionsTaken response:", response);
-            });
         
             sendResponse({ status: 'started' });
         } catch (error) {

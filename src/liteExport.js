@@ -132,11 +132,26 @@ console.log("LiteExport content script loaded in top frame?", window.top === win
     setTimeout(() => { userInteracted = false; }, 500);
   }
 
-  // Logs events and triggers screenshots for specific event types
-  function logEvent(type, data) {
-    const eventRecord = { type, timestamp: Date.now(), ...data };
-    chrome.runtime.sendMessage({ action: "recordLiteEvent", liteEvent: eventRecord });
 
+  chrome.runtime.sendMessage({ action: 'getActiveIndices' }, (response) => {
+    const { activeStepIndex, activeFragmentIndex } = response;
+    // Now call logEvent with the retrieved indexes:
+    logEvent('yourEventType', { /* your data */ }, activeStepIndex, activeFragmentIndex);
+  });
+
+  
+  // Logs events and triggers screenshots for specific event types
+  function logEvent(type, data, stepIndex = 0, fragmentIndex = 0) {
+    const eventRecord = { type, timestamp: Date.now(), ...data };
+    chrome.runtime.sendMessage({
+      action: "updateActionsTaken",
+      payload: {
+        liteEvent: eventRecord,
+        stepIndex,        // The index of the step you want to update.
+        fragmentIndex,    // The index of the fragment within that step.
+      }
+    });
+  
     if (type === "pageLoad" || type === "scrollMovement" || type === "domMutation") {
       triggerScreenshot(type);
     }

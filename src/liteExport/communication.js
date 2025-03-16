@@ -1,5 +1,5 @@
 // communication.js
-export function setupCommunication({ initializeTracking, captureInteractableElements, destroyTracking }) {
+export function setupCommunication({ initializeTracking, captureInteractableElements, destroyTracking, recordCurrentUrl }) {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === "ping") {
         sendResponse({ pong: true });
@@ -9,6 +9,7 @@ export function setupCommunication({ initializeTracking, captureInteractableElem
         if (message.action === "start") {
           initializeTracking();
           captureInteractableElements();
+          recordCurrentUrl()
           sendResponse({ status: "lite tracking + element capture started" });
         } else if (message.action === "stop") {
           destroyTracking();
@@ -18,6 +19,7 @@ export function setupCommunication({ initializeTracking, captureInteractableElem
         } else if (message.action === "resume") {
           initializeTracking();
           captureInteractableElements();
+          recordCurrentUrl()
           sendResponse({ status: "lite tracking resumed" });
         }        
         else if (message.action === "pause") {

@@ -27,6 +27,11 @@ export function triggerScreenshot(screenshotType) {
   chrome.runtime.sendMessage({ action: "takeScreenshot", screenshotType });
 }
 
+export function recordCurrentUrl() {
+  console.log('recording url')
+  chrome.runtime.sendMessage({ action: "getCurrentUrl"});
+}
+
 export function handleClick(event) {
   try {
     markUserInteraction();

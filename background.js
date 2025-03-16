@@ -1,11 +1,12 @@
 import { globalState, recordState } from './src/nu/stateManagement/stateManagement.js';
 import { createContext, removeContext, getContext } from './src/nu/loop/context.js';
-import { updateRecordStateWithScreenshot } from './src/nu/stateManagement/stateManagement.js';
+import { updateRecordStateWithScreenshot, updateRecordStateWithUrl } from './src/nu/stateManagement/stateManagement.js';
 
 
 let windowOpened = false;
 let screenshotQueue = [];
 let screenshotCounter = 0;
+
 
 
 function openStartWindow() {
@@ -139,6 +140,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.error("Error in screenshot callback:", innerErr);
         }
       });
+      break;
+    }
+
+    case 'getCurrentUrl': {
+      const tabId = globalState.recordingTabId;
+      if (tabId) {
+        chrome.tabs.get(tabId, (tab) => {
+          // Record the URL into the active step and fragment.
+          console.log('url is', tab.url)
+          updateRecordStateWithUrl(tab.url);
+          sendResponse({ success: true });
+        });
+        // Return true to keep the message channel open.
+        return true;
+      } else {
+        sendResponse({ error: 'No recording tab found.' });
+      }
       break;
     }
 

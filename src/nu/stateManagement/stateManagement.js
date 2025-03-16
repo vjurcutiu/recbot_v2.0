@@ -19,6 +19,20 @@ export const recordState = {
   },
 };
 
+export function updateRecordStateWithUrl(url) {
+  const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
+  const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;
+  const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
+  
+  if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
+    // Update the currentURL field in the active fragment.
+    step.fragments[activeFragmentIndex].currentURL = url;
+    console.log("Updated currentURL in active fragment:", url);
+  } else {
+    console.error("Active step or fragment not found for updating currentURL.");
+  }
+}
+
 export function updateRecordStateWithScreenshot(filename) {
   const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
   const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;

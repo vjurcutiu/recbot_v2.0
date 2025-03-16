@@ -17,6 +17,7 @@ export function setupCommunication({ initializeTracking, captureInteractableElem
           sendResponse({ status: "export not handled here" });
         } else if (message.action === "resume") {
           initializeTracking();
+          captureInteractableElements();
           sendResponse({ status: "lite tracking resumed" });
         }        
         else if (message.action === "pause") {

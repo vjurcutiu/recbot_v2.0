@@ -213,6 +213,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'recordInteractableElements': {
       const { interactableElements } = message.payload;
+      console.log('interactable elements', interactableElements)
       // Use the active step and fragment indices, defaulting to 0 if not set.
       const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
       const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;

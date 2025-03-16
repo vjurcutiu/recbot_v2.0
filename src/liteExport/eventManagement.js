@@ -15,7 +15,6 @@ export function attachEventListeners() {
   document.addEventListener("submit", handleFormSubmit, true);
 
   // Begin observing dynamic content and DOM mutations.
-  observeDomMutations();
   observeDynamicContent();
 }
 

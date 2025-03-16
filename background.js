@@ -1,7 +1,12 @@
 import { globalState, recordState } from './src/nu/stateManagement/stateManagement.js';
 import { createContext, removeContext, getContext } from './src/nu/loop/context.js';
+import { updateRecordStateWithScreenshot } from './src/nu/stateManagement/stateManagement.js';
+
 
 let windowOpened = false;
+let screenshotQueue = [];
+let screenshotCounter = 0;
+
 
 function openStartWindow() {
   chrome.windows.create({
@@ -113,6 +118,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       }
       break;
+
+    case 'takeScreenshot': {
+      chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
+        try {
+          if (chrome.runtime.lastError) {
+            console.error("Screenshot capture failed:", chrome.runtime.lastError.message);
+            return;
+          }
+          screenshotCounter++;
+          const timestamp = Date.now();
+          const screenshotType = message.screenshotType || "unknown";
+          const filename = `${screenshotCounter}.SS-${timestamp}-${screenshotType}.png`;
+          screenshotQueue.push({ filename, dataUrl });
+          console.log("Screenshot queued:", filename);
+          console.log("Sending recordScreenshot message with filename:", filename);
+
+          updateRecordStateWithScreenshot(filename);
+        } catch (innerErr) {
+          console.error("Error in screenshot callback:", innerErr);
+        }
+      });
+      break;
+    }
 
     case 'getRecordState':
       sendResponse({ recordState });

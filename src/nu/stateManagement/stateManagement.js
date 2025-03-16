@@ -19,6 +19,21 @@ export const recordState = {
   },
 };
 
+export function updateRecordStateWithScreenshot(filename) {
+  const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
+  const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;
+  const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
+  if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
+    if (!Array.isArray(step.fragments[activeFragmentIndex].screenshots)) {
+      step.fragments[activeFragmentIndex].screenshots = [];
+    }
+    step.fragments[activeFragmentIndex].screenshots.push(filename);
+    console.log("Updated recordState screenshots:", step.fragments[activeFragmentIndex].screenshots);
+  } else {
+    console.error("Active step or fragment not found for recordScreenshot.");
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.action) {
     case 'setActiveComponent':
@@ -229,7 +244,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       break;
     }
-    
+ 
 
     case 'getRecordState':
       sendResponse({ recordState });

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './styles/StepSubLoop.css'
 
 function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setActiveComponent }) {
   // Consolidated state for toggle answers and reason.
@@ -177,7 +178,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
   };
 
   return (
-    <div>
+    <div className="stepsubloop-container">
       {/* Reason Input */}
       <div>
         <p>What’s the reason you chose that action among all the possible actions?</p>

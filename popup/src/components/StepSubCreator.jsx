@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './styles/StepSubCreator.css'
 
 function StepSubCreator({ steps, setSteps, baseStepNumber = 0, activeStepIndex = 0 }) {
   const [currentInput, setCurrentInput] = useState('');
@@ -78,7 +79,7 @@ function StepSubCreator({ steps, setSteps, baseStepNumber = 0, activeStepIndex =
   };
 
   return (
-    <div>
+    <div className="stepsubcreator-container">
       <h2>Replan Steps</h2>
       {steps.map((step, index) => (
         <div key={step.id} style={{ marginBottom: '10px' }}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import StepSubCreator from './StepSubCreator';
+import './styles/StepCreator.css'
 
 function StepCreator({ setActiveComponent }) {
   const [steps, setSteps] = useState([]);
@@ -62,7 +63,7 @@ function StepCreator({ setActiveComponent }) {
   };
 
   return (
-    <div>
+    <div className="stepcreator-container">
       <h1>Step Creator</h1>
       <StepSubCreator steps={steps} setSteps={setSteps} baseStepNumber={0} />
       <br />

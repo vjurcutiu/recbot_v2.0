@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import StepSubLoop from './StepSubLoop';
 import StepSubCreator from './StepSubCreator';
+import './styles/StepLoop.css'
 
 function StepLoop({ setActiveComponent }) {
   const [currentTask, setCurrentTask] = useState({});
@@ -80,7 +81,7 @@ function StepLoop({ setActiveComponent }) {
   const title = `Step ${currentStep.id}`;
 
   return (
-    <div>
+    <div className="steploop-container">
       <h1>{title}</h1>
       <ul>
         {steps.map((step, index) => (

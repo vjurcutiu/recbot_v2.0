@@ -1,0 +1,51 @@
+/* Google-style flat look for StepSubCreator component */
+body {
+    font-family: 'Roboto', sans-serif;
+    color: #202124;
+    background-color: #f1f3f4;
+    margin: 0;
+    padding: 20px;
+  }
+  
+  .stepsubcreator-container {
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 20px;
+    max-width: 600px;
+    margin: 20px auto;
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3),
+                0 4px 8px rgba(60, 64, 67, 0.15);
+  }
+  
+  .stepsubcreator-container h2 {
+    font-weight: 400;
+    margin-bottom: 16px;
+  }
+  
+  .stepsubcreator-container div {
+    margin-bottom: 10px;
+  }
+  
+  .stepsubcreator-container input[type="text"] {
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 14px;
+    margin-right: 8px;
+  }
+  
+  .stepsubcreator-container button {
+    background-color: #1a73e8;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .stepsubcreator-container button:hover {
+    background-color: #1558b0;
+  }
+  

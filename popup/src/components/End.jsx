@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { updateTask } from '../storage/db';
+import './styles/End.css'
 
 function End({ setActiveComponent }) {
   const [activeTask, setActiveTask] = useState(null);
@@ -7,11 +8,18 @@ function End({ setActiveComponent }) {
   // On mount, retrieve the current task from the background state.
   useEffect(() => {
     chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
-      console.log(response)
+      console.log(response);
       if (response && response.recordState && response.recordState.currentTask) {
         setActiveTask(response.recordState.currentTask);
-        console.log('active task in end', response.recordState.currentTask)
+        console.log('active task in end', response.recordState.currentTask);
       }
+    });
+  }, []);
+
+  // On mount, send the export message.
+  useEffect(() => {
+    chrome.runtime.sendMessage({ action: 'export' }, (response) => {
+      console.log('Export response:', response);
     });
   }, []);
 
@@ -30,7 +38,7 @@ function End({ setActiveComponent }) {
   };
 
   const handleNextTask = async () => {
-    await completeTask();    
+    await completeTask();
     setActiveComponent('Start');
   };
 
@@ -40,7 +48,7 @@ function End({ setActiveComponent }) {
     window.close();
   };
 
-  // New handler for exporting
+  // Optionally, you can keep the export button if needed.
   const handleExport = () => {
     chrome.runtime.sendMessage({ action: 'export' }, (response) => {
       console.log('Export response:', response);
@@ -48,13 +56,14 @@ function End({ setActiveComponent }) {
   };
 
   return (
-    <div>
+    <div className="end-container">
       <h1>End Component</h1>
       <p>Task completed!</p>
       <div style={{ marginTop: '20px' }}>
         <button onClick={handleNextTask}>Next Task</button>
         <button onClick={handleDone}>Done</button>
-        <button onClick={handleExport}>Export</button>
+        {/* Optionally, include a button to manually trigger export */}
+        {/* <button onClick={handleExport}>Export</button> */}
       </div>
     </div>
   );

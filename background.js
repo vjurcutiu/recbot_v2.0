@@ -1,13 +1,11 @@
 import { globalState, recordState } from './src/nu/stateManagement/stateManagement.js';
 import { createContext, removeContext, getContext } from './src/nu/loop/context.js';
 import { updateRecordStateWithScreenshot, updateRecordStateWithUrl } from './src/nu/stateManagement/stateManagement.js';
-
+import { exportRecordState, exportScreenshots } from './src/nu/exporter/exporter.js';
 
 let windowOpened = false;
 let screenshotQueue = [];
 let screenshotCounter = 0;
-
-
 
 function openStartWindow() {
   chrome.windows.create({
@@ -99,7 +97,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.payload) {
         const { id, name, objectives, startUrl, steps } = message.payload;
         recordState.currentTask = {
-          id: id || recordState.currentTask.id, // This now ensures id is stored.
+          id: id || recordState.currentTask.id,
           name: name ?? recordState.currentTask.name,
           objectives: objectives ?? recordState.currentTask.objectives,
           startUrl: startUrl ?? recordState.currentTask.startUrl,
@@ -147,12 +145,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const tabId = globalState.recordingTabId;
       if (tabId) {
         chrome.tabs.get(tabId, (tab) => {
-          // Record the URL into the active step and fragment.
-          console.log('url is', tab.url)
+          console.log('url is', tab.url);
           updateRecordStateWithUrl(tab.url);
           sendResponse({ success: true });
         });
-        // Return true to keep the message channel open.
         return true;
       } else {
         sendResponse({ error: 'No recording tab found.' });
@@ -169,14 +165,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case 'open-new-tab':
-      // Use the URL from the global state (recordState.currentTask.startUrl)
       const startUrl = recordState.currentTask.startUrl;
       if (startUrl) {
         chrome.tabs.create({ url: startUrl }, (tab) => {
           console.log('New tab opened with startUrl:', tab);
-          // Create a new context for the opened tab.
           createContext(tab.id);
-          // Save the new tab id in the global state.
           globalState.recordingTabId = tab.id;
           sendResponse({ success: true, tabId: tab.id });
         });
@@ -198,8 +191,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             context = createContext(tabId);
           }
           context.recording = true;
-          
-          // Wait for the content script to be ready
           ensureContentScript(tabId, () => {
             chrome.tabs.sendMessage(tabId, { action: 'start' }, (response) => {
               if (chrome.runtime.lastError) {
@@ -218,7 +209,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     case 'stopRecording': {
-      // Use the global tab id if available; otherwise, fallback to sender.tab.id.
       const tabId = globalState.recordingTabId || (sender.tab && sender.tab.id);
       if (tabId) {
         let context = getContext(tabId);
@@ -235,7 +225,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     case 'userClicked': {
-      // Use the global recording tab id, fallback to sender.tab.id if needed.
       const tabId = globalState.recordingTabId || (sender.tab && sender.tab.id);
       if (!tabId) {
         console.log("No valid tabId found.");
@@ -254,8 +243,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           globalState.recording = true;
           chrome.storage.local.set({ recording: true }, () => {
             console.log(`Recording resumed in tab ${tabId}`, context);
-    
-            // Ensure content script is available before sending resume message
             ensureContentScript(tabId, () => {
               chrome.tabs.sendMessage(tabId, { action: 'resume' }, (response) => {
                 if (chrome.runtime.lastError) {
@@ -283,15 +270,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case 'ping':
-      // For debugging: reply to pings.
       sendResponse({ pong: true });
       break;
 
+    // Integrate the export functions here
     case 'export': {
       console.log('Export action received from', sender);
-      // Here you can add any processing logic for exporting data.
-      // For example, you might package data and send it to a file, or trigger another process.
-      sendResponse({ success: true, message: 'Export handled in background script.' });
+      // Export the recordState as a JSON file.
+      exportRecordState();
+      // Export the screenshot queue as a ZIP archive.
+      exportScreenshots(screenshotQueue, () => {
+        // Clear the screenshot queue and reset the counter after export.
+        screenshotQueue = [];
+        screenshotCounter = 0;
+        console.log("Screenshot queue cleared after export.");
+      });
+      sendResponse({ success: true, message: 'Export initiated for record state and screenshots.' });
       break;
     }
 
@@ -301,7 +295,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Clean up contexts when tabs are closed.
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
   if (getContext(tabId)) {
     removeContext(tabId);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { addTask, getTasks } from '../storage/db';
+import './styles/Start.css'
 
 function Start({ setActiveComponent }) {
   const [tasks, setTasks] = useState([]);
@@ -197,7 +198,7 @@ function Start({ setActiveComponent }) {
   };
 
   return (
-    <div>
+    <div className="start-container">
       <h1>Start Component</h1>
 
       {/* Only offer file upload if tasks haven't been loaded yet */}

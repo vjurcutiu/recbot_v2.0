@@ -180,7 +180,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
   return (
     <div className="stepsubloop-container">
       {/* Reason Input */}
-      <div>
+      <div className='stepsubloop-reason'>
         <p>What’s the reason you chose that action among all the possible actions?</p>
         {submittedReason ? (
           <div>
@@ -217,7 +217,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
 
       {/* Completed Toggle */}
       {showCompleted && (
-        <div>
+        <div className='stepsubloop-completed'>
           <p>Did you complete the current planning step?</p>
           {completed ? (
             <div>
@@ -234,7 +234,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
 
       {/* Closer Toggle */}
       {showCloser && (
-        <div>
+        <div className='stepsubloop-closer'>
           <p>Do you think you're closer to completing the current planning step?</p>
           {closer ? (
             <div>
@@ -258,7 +258,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
 
       {/* Replanning Toggle */}
       {showNeedsReplan && (
-        <div>
+        <div className='stepsubloop-replan'>
           <p>Do you need replanning?</p>
           {needsReplan ? (
             <div>

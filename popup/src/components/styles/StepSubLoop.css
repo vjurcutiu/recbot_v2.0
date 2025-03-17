@@ -1,48 +1,74 @@
-  /* Google-style flat look for StepSubLoop component */
+/* Google-style flat look for StepSubLoop component */
 body {
-    font-family: 'Roboto', sans-serif;
-    color: #202124;
-    background-color: #f1f3f4;
-    margin: 0;
-    padding: 20px;
-  }
-  
-  .stepsubloop-container {
-    background-color: #fff;
-    border-radius: 4px;
-    padding: 20px;
-    max-width: 800px;
-    margin: 20px auto;
-    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3),
-                0 4px 8px rgba(60, 64, 67, 0.15);
-  }
-  
-  .stepsubloop-container p {
-    margin-bottom: 16px;
-    line-height: 1.5;
-  }
-  
-  .stepsubloop-container input[type="text"] {
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    padding: 8px;
-    font-size: 14px;
-    margin-right: 8px;
-  }
-  
-  .stepsubloop-container button {
-    background-color: #1a73e8;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin: 10px 8px 0 0;
-  }
-  
-  .stepsubloop-container button:hover {
-    background-color: #1558b0;
-  }
-  
+  font-family: 'Roboto', sans-serif;
+  color: #202124;
+  background-color: #f1f3f4;
+  margin: 0;
+  padding: 20px;
+}
+
+.stepsubloop-container {
+  background-color: #ffffff;
+  border-radius: 4px;
+  padding: 24px;
+  max-width: 800px;
+}
+
+.stepsubloop-container p {
+  margin-bottom: 16px;
+  line-height: 1.5;
+  font-size: 1.1em;
+}
+
+/* Subtle delineation for each toggle/section */
+.stepsubloop-reason,
+.stepsubloop-completed,
+.stepsubloop-closer,
+.stepsubloop-replan {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #f9f9f9;
+  transition: box-shadow 0.2s ease;
+}
+
+.stepsubloop-reason:hover,
+.stepsubloop-completed:hover,
+.stepsubloop-closer:hover,
+.stepsubloop-replan:hover {
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
+}
+
+/* Input styling */
+.stepsubloop-container input[type="text"] {
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 14px;
+  margin-right: 8px;
+  transition: border-color 0.3s ease;
+}
+
+.stepsubloop-container input[type="text"]:focus {
+  border-color: #1a73e8;
+  outline: none;
+}
+
+/* Button styling */
+.stepsubloop-container button {
+  background-color: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  margin: 10px 8px 0 0;
+}
+
+.stepsubloop-container button:hover {
+  background-color: #1558b0;
+  transform: translateY(-1px);
+}

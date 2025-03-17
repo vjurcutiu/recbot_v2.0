@@ -11,10 +11,8 @@ body {
     background-color: #fff;
     border-radius: 4px;
     padding: 20px;
-    max-width: 600px;
-    margin: 20px auto;
-    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3),
-                0 4px 8px rgba(60, 64, 67, 0.15);
+    width: 70%;
+    margin: 20px 0px;
   }
   
   .stepsubcreator-container h2 {
@@ -27,25 +25,87 @@ body {
   }
   
   .stepsubcreator-container input[type="text"] {
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    padding: 8px;
-    font-size: 14px;
-    margin-right: 8px;
-  }
-  
-  .stepsubcreator-container button {
-    background-color: #1a73e8;
-    color: #fff;
     border: none;
-    border-radius: 4px;
-    padding: 8px 12px;
+    border-bottom: 1px solid #dadce0;
+    background-color: transparent;
+    padding: 8px 4px;
     font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+    outline: none;
+    transition: border-color 0.3s ease;
   }
   
+  .stepsubcreator-container input[type="text"]:focus {
+    border-bottom: 2px solid #1a73e8;
+  }
+ 
   .stepsubcreator-container button:hover {
     background-color: #1558b0;
   }
   
+  /* Container for each step */
+  .step-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;              /* uniform spacing between elements */
+    margin-bottom: 10px;
+    border-bottom: 2px solid #1a73e8;
+    line-height: 1.2;      /* unify line-height for the row */
+  }
+
+/* The text span, to ensure no default margins or weird line-height */
+.step-text {
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  max-width: 70%;  /* adjust as needed */
+  min-width: 0;    /* allow flex item to shrink */
+}
+
+/* Styling for the editing input */
+.step-edit-input {
+  border: none;
+  border-bottom: 1px solid #dadce0;
+  padding: 8px 4px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s ease;
+  margin-right: 8px;
+}
+
+.step-edit-input:focus {
+  border-bottom: 2px solid #1a73e8;
+}
+
+.step-button {
+  appearance: none;       /* reset browser-specific button styling */
+  -moz-appearance: none;  /* for Firefox */
+  -webkit-appearance: none; /* for Safari/Chrome */
+  border: none;
+  padding: 8px 12px;
+  background-color: #1a73e8;
+  color: #fff;
+  border-radius: 4px;
+  font-family: inherit; /* so button text matches your app font */
+  font-size: 14px;
+  line-height: 1.2;     /* ensure it’s not pushing text down */
+  display: inline-flex;  /* make the button itself flex */
+  align-items: center;   /* center the text vertically */
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.step-button:hover {
+  background-color: #1558b0;
+}
+
+
+.step-buttons {
+  margin-left: auto;
+}

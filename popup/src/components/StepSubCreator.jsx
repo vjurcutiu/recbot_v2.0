@@ -80,28 +80,49 @@ function StepSubCreator({ steps, setSteps, baseStepNumber = 0, activeStepIndex =
 
   return (
     <div className="stepsubcreator-container">
-      <h2>Replan Steps</h2>
-      {steps.map((step, index) => (
-        <div key={step.id} style={{ marginBottom: '10px' }}>
-          {editingIndex === index ? (
-            <>
-              <input
-                type="text"
-                value={editingText}
-                onChange={handleEditingChange}
-                onKeyDown={handleKeyDown}
-              />
-              <button onClick={() => handleSaveEdit(index)}>Save</button>
-            </>
-          ) : (
-            <>
-              <span>{`Step ${step.id}: ${step.name}`}</span>
-              <button onClick={() => handleEditStep(index)}>Edit</button>
-            </>
-          )}
-          <button onClick={() => handleDeleteStep(index)}>Delete</button>
-        </div>
-      ))}
+      <div className="steps-wrapper">
+        {steps.map((step, index) => (
+          <div key={step.id} className="step-item">
+            {editingIndex === index ? (
+              <>
+                <input
+                  type="text"
+                  className="step-edit-input"
+                  value={editingText}
+                  onChange={handleEditingChange}
+                  onKeyDown={handleKeyDown}
+                />
+                  
+                <button
+                  className="step-button edit-save-button"
+                  onClick={() => handleSaveEdit(index)}
+                >
+                  Save
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="step-text">{`Step ${step.id}: ${step.name}`}</span>
+                <div className="step-buttons">
+                <button
+                  className="step-button edit-button"
+                  onClick={() => handleEditStep(index)}
+                >
+                  Edit
+                </button>
+                <button
+                    className="step-button delete-button"
+                    onClick={() => handleDeleteStep(index)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
+
+          </div>
+        ))}
+      </div>
       <input
         type="text"
         value={currentInput}

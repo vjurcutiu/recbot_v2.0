@@ -224,7 +224,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    case 'userClicked': {
+    case 'userClicked':
+    case 'userInput': {
       const tabId = globalState.recordingTabId || (sender.tab && sender.tab.id);
       if (!tabId) {
         console.log("No valid tabId found.");

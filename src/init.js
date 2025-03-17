@@ -39,10 +39,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   });
   
   // Listen for clicks and send the click event to the background.
-  document.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ action: 'userClicked' });
+  document.addEventListener('click', (event) => {
+    // List interactive selectors: adjust the selectors as needed.
+    const interactiveSelectors = 'button, a, input, select, textarea, [role="button"], [tabindex]';
+    
+    if (event.target.matches(interactiveSelectors)) {
+      chrome.runtime.sendMessage({ action: 'userClicked' });
+    }
   });
-  
+
+  document.addEventListener('keydown', (event) => {
+    // Check if the event originates from an input, textarea, or select element.
+    if (event.target.matches('input, textarea, select')) {
+      // Check if the Enter key was pressed.
+      if (event.key === 'Enter') {
+        chrome.runtime.sendMessage({ action: 'userInput' });
+      }
+    }
+  });
+
   // Notify the background script that the content script is ready.
   chrome.runtime.sendMessage({ action: 'contentScriptReady' });
   console.log('Click handler content script loaded.');

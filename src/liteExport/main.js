@@ -3,7 +3,7 @@ import { setupCommunication } from './communication.js';
 import { captureInteractableElements } from './domUtils.js';
 import { initializeTracking, destroyTracking } from './eventManagement.js';
 import { waitForStableDOM } from './observers.js';
-import { logEvent, recordCurrentUrl } from './eventHandlers.js';
+import { logEvent, recordCurrentUrl, triggerScreenshot } from './eventHandlers.js';
 (function() {
     // Only run in top frame.
     if (window.top !== window.self) {
@@ -15,6 +15,7 @@ import { logEvent, recordCurrentUrl } from './eventHandlers.js';
     captureInteractableElements,
     destroyTracking,
     recordCurrentUrl,
+    triggerScreenshot,
     });
 
     // Wait for the DOM to be stable and then log the page load event.

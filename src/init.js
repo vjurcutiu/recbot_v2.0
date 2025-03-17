@@ -41,11 +41,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Listen for clicks and send the click event to the background.
   document.addEventListener('click', (event) => {
     // List interactive selectors: adjust the selectors as needed.
-    const interactiveSelectors = 'button, a, input, select, textarea, [role="button"], [tabindex]';
     
-    if (event.target.matches(interactiveSelectors)) {
+    
+    
       chrome.runtime.sendMessage({ action: 'userClicked' });
-    }
+    
   });
 
   document.addEventListener('keydown', (event) => {

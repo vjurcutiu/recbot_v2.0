@@ -118,28 +118,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       break;
 
-    case 'takeScreenshot': {
-      chrome.tabs.captureVisibleTab(null, { format: "png" }, (dataUrl) => {
-        try {
-          if (chrome.runtime.lastError) {
-            console.error("Screenshot capture failed:", chrome.runtime.lastError.message);
+      case 'takeScreenshot': {
+        const recordingTabId = globalState.recordingTabId;
+        if (!recordingTabId) {
+          console.error("No recording tab set.");
+          return;
+        }
+        // Retrieve the tab info to get its windowId
+        chrome.tabs.get(recordingTabId, (tab) => {
+          if (chrome.runtime.lastError || !tab) {
+            console.error("Recording tab not found:", chrome.runtime.lastError);
             return;
           }
-          screenshotCounter++;
-          const timestamp = Date.now();
-          const screenshotType = message.screenshotType || "unknown";
-          const filename = `${screenshotCounter}.SS-${timestamp}-${screenshotType}.png`;
-          screenshotQueue.push({ filename, dataUrl });
-          console.log("Screenshot queued:", filename);
-          console.log("Sending recordScreenshot message with filename:", filename);
-
-          updateRecordStateWithScreenshot(filename);
-        } catch (innerErr) {
-          console.error("Error in screenshot callback:", innerErr);
-        }
-      });
-      break;
-    }
+          // Use the recording tab's windowId
+          chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg" }, (dataUrl) => {
+            if (chrome.runtime.lastError) {
+              console.error("Screenshot capture failed:", chrome.runtime.lastError.message);
+              return;
+            }
+            try {
+              screenshotCounter++;
+              const timestamp = Date.now();
+              const screenshotType = message.screenshotType || "unknown";
+              const filename = `${screenshotCounter}.SS-${timestamp}-${screenshotType}.png`;
+              screenshotQueue.push({ filename, dataUrl });
+              console.log("Screenshot queued:", filename);
+              updateRecordStateWithScreenshot(filename);
+            } catch (innerErr) {
+              console.error("Error in screenshot callback:", innerErr);
+            }
+          });
+        });
+        break;
+      }
+      
 
     case 'getCurrentUrl': {
       const tabId = globalState.recordingTabId;

@@ -3,7 +3,8 @@
 export const globalState = {
   activeComponent: null,
   filesLoaded: false,
-  recordingTabId: null,
+  allowedTabIds: [],    // Array to store all allowed recording tab IDs.
+  recordingTabId: null, // The current active allowed tab.
   recording: false,
 };
 
@@ -13,19 +14,18 @@ export const recordState = {
     name: '',
     objectives: [],
     startUrl: '',
-    activeStepIndex: 0, 
-    activeFragmentIndex: 0, // New property to track the active fragment index.
+    activeStepIndex: 0,
+    activeFragmentIndex: 0, // tracks the active fragment index.
     steps: [],
   },
 };
 
 export function updateRecordStateWithUrl(url) {
-  const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
-  const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;
+  const activeStepIndex = recordState.currentTask.activeStepIndex ?? 0;
+  const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
   const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
   
   if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
-    // Update the currentURL field in the active fragment.
     step.fragments[activeFragmentIndex].currentURL = url;
     console.log("Updated currentURL in active fragment:", url);
   } else {
@@ -34,8 +34,8 @@ export function updateRecordStateWithUrl(url) {
 }
 
 export function updateRecordStateWithScreenshot(filename) {
-  const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
-  const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;
+  const activeStepIndex = recordState.currentTask.activeStepIndex ?? 0;
+  const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
   const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
   if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
     if (!Array.isArray(step.fragments[activeFragmentIndex].screenshots)) {
@@ -79,7 +79,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
 
     case 'updateTaskInfo': {
-      // Update only basic task info (ID, name, objectives, startUrl)
       const { id, name, objectives, startUrl } = message.payload;
       recordState.currentTask = {
         ...recordState.currentTask,
@@ -93,9 +92,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   
     case 'updateTaskSteps': {
-      // Update steps separately. For each step, if no fragments exist,
-      // create a default fragment that contains the properties that were
-      // formerly stored at the step level.
       const { steps, activeStepIndex } = message.payload;
       if (steps !== undefined) {
         recordState.currentTask.steps = Array.isArray(steps)
@@ -112,7 +108,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               return {
                 ...step,
                 fragments,
-                // Preserve step ID, name and other core properties.
               };
             })
           : recordState.currentTask.steps;
@@ -125,8 +120,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   
     case 'updateToggleAnswers': {
-      // Now update toggleAnswers at the fragment level rather than on the step.
-      // Expects payload: { toggleAnswers: object, activeStepIndex: number, fragmentIndex: number }
       const { toggleAnswers, activeStepIndex, fragmentIndex } = message.payload;
       const step = recordState.currentTask.steps[activeStepIndex];
       if (step && Array.isArray(step.fragments) && step.fragments[fragmentIndex] !== undefined) {
@@ -138,9 +131,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    // Listener to add a fragment to a specific step.
     case 'addFragment': {
-      // Expects payload: { stepIndex: number, fragment: object }
       const { stepIndex, fragment } = message.payload;
       const step = recordState.currentTask.steps[stepIndex];
       if (step) {
@@ -156,8 +147,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const newFragmentIndex = step.fragments.length;
         const newFragment = { 
           actionsTaken: fragment.actionsTaken || [], 
-          interactableElements: fragment.interactableElements || [],
-          screenshots: fragment.screenshots || [],
+          interactableElements: fragment.interactableElements || [], 
+          screenshots: fragment.screenshots || [], 
           toggleAnswers: fragment.toggleAnswers || {},
           fragmentIndex: newFragmentIndex,
         };
@@ -169,16 +160,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    // Listener to update a specific fragment.
     case 'updateFragment': {
-      // Expects payload: { stepIndex: number, fragmentIndex: number, fragmentData: object }
       const { stepIndex, fragmentIndex, fragmentData } = message.payload;
       const step = recordState.currentTask.steps[stepIndex];
       if (step && Array.isArray(step.fragments) && step.fragments[fragmentIndex] !== undefined) {
         step.fragments[fragmentIndex] = {
           ...step.fragments[fragmentIndex],
           ...fragmentData,
-          fragmentIndex, // ensure index remains unchanged
+          fragmentIndex,
         };
         sendResponse({ success: true, updatedFragment: step.fragments[fragmentIndex] });
       } else {
@@ -187,7 +176,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
   
-    // New message: Set the active fragment index.
     case 'setActiveFragmentIndex': {
       const { activeFragmentIndex } = message.payload;
       recordState.currentTask.activeFragmentIndex = activeFragmentIndex;
@@ -195,43 +183,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
 
-    // New message: Return both active step and active fragment indices.
     case 'getActiveIndices': {
       sendResponse({
         activeStepIndex: recordState.currentTask.activeStepIndex,
-        activeFragmentIndex: recordState.currentTask.activeFragmentIndex || 0
+        activeFragmentIndex: recordState.currentTask.activeFragmentIndex ?? 0
       });
       break;
     }
 
+    // Updated updateActionsTaken handler:
     case 'updateActionsTaken': {
-      // If indexes are not provided, use the stored values
-      const {
-        liteEvent,
-        stepIndex = recordState.currentTask.activeStepIndex || 0,
-        fragmentIndex = recordState.currentTask.activeFragmentIndex || 0,
-      } = message.payload;
+      // Use provided indexes or fallback to the active ones from recordState
+      const { liteEvent } = message.payload;
+      const stepIndex = message.payload.stepIndex ?? recordState.currentTask.activeStepIndex ?? 0;
+      const fragmentIndex = message.payload.fragmentIndex ?? recordState.currentTask.activeFragmentIndex ?? 0;
+    
       console.log("Logging event at step", stepIndex, "fragment", fragmentIndex);
     
-      // Proceed with updating the state using these indexes...
       if (recordState.currentTask.steps && recordState.currentTask.steps[stepIndex]) {
         const step = recordState.currentTask.steps[stepIndex];
-        if (Array.isArray(step.fragments) && step.fragments[fragmentIndex]) {
-          step.fragments[fragmentIndex].actionsTaken.push(liteEvent);
-          console.log("Updated actionsTaken:", step.fragments[fragmentIndex].actionsTaken);
-        } else {
-          // Optionally create a new fragment if not found
-          const newFragment = {
-            actionsTaken: [liteEvent],
+        if (!Array.isArray(step.fragments)) {
+          step.fragments = [];
+        }
+        while (step.fragments.length <= fragmentIndex) {
+          step.fragments.push({
+            actionsTaken: [],
             interactableElements: [],
             screenshots: [],
             toggleAnswers: {},
-            fragmentIndex: fragmentIndex,
-          };
-          step.fragments = step.fragments || [];
-          step.fragments[fragmentIndex] = newFragment;
-          console.log("Created new fragment with actionsTaken:", newFragment.actionsTaken);
+            fragmentIndex: step.fragments.length,
+          });
         }
+        step.fragments[fragmentIndex].actionsTaken.push(liteEvent);
+        console.log("Updated actionsTaken:", step.fragments[fragmentIndex].actionsTaken);
         sendResponse({ success: true });
       } else {
         console.error("Step not found for index:", stepIndex);
@@ -242,13 +226,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'recordInteractableElements': {
       const { interactableElements } = message.payload;
-      console.log('interactable elements', interactableElements)
-      // Use the active step and fragment indices, defaulting to 0 if not set.
-      const activeStepIndex = recordState.currentTask.activeStepIndex || 0;
-      const activeFragmentIndex = recordState.currentTask.activeFragmentIndex || 0;
+      console.log('interactable elements', interactableElements);
+      const activeStepIndex = recordState.currentTask.activeStepIndex ?? 0;
+      const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
       const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
       if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex]) {
-        // Update the interactableElements for the active fragment.
         step.fragments[activeFragmentIndex].interactableElements = interactableElements;
         console.log("Updated interactableElements:", step.fragments[activeFragmentIndex].interactableElements);
         sendResponse({ success: true, updatedInteractables: step.fragments[activeFragmentIndex].interactableElements });
@@ -259,7 +241,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     }
  
-
     case 'getRecordState':
       sendResponse({ recordState });
       break;

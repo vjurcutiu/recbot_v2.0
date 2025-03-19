@@ -13,12 +13,15 @@ function b64EncodeUnicode(str) {
 
 export function exportRecordState() {
   try {
+    // Convert recordState object to a JSON string with formatting
     const json = JSON.stringify(recordState, null, 2);
-    // Create a Blob with UTF-8 encoding for the JSON data
-    const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
-    // Generate an object URL for the Blob
-    const dataUrl = URL.createObjectURL(blob);
+    // Encode the JSON string in base64 using the Unicode-safe encoding function
+    const base64 = b64EncodeUnicode(json);
+    // Create a data URL for the JSON blob
+    const dataUrl = `data:application/json;base64,${base64}`;
+    // Create a filename using a timestamp
     const filename = `recordState-${Date.now()}.json`;
+    // Use Chrome's downloads API to trigger the download
     chrome.downloads.download({
       url: dataUrl,
       filename,
@@ -30,8 +33,6 @@ export function exportRecordState() {
       } else {
         console.log("Record state export complete. Download ID:", downloadId);
       }
-      // Clean up the URL once it's no longer needed
-      setTimeout(() => URL.revokeObjectURL(dataUrl), 1000);
     });
   } catch (err) {
     console.error("Failed to export record state:", err);

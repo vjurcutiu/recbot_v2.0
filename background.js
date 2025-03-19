@@ -179,19 +179,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ activeComponent: globalState.activeComponent });
       break;
 
-    case 'open-new-tab':
-      const startUrl = recordState.currentTask.startUrl;
-      if (startUrl) {
-        chrome.tabs.create({ url: startUrl }, (tab) => {
-          console.log('New tab opened with startUrl:', tab);
-          createContext(tab.id);
-          globalState.recordingTabId = tab.id;
-          sendResponse({ success: true, tabId: tab.id });
-        });
-      } else {
-        sendResponse({ success: false, error: 'No start URL found in the global state' });
-      }
-      break;
+      case 'open-new-tab':
+        const startUrl = recordState.currentTask.startUrl;
+        if (startUrl) {
+          chrome.tabs.create({ url: startUrl }, (tab) => {
+            console.log('New tab opened with startUrl:', tab);
+            createContext(tab.id);
+            // Add new tab id to the allowedTabIds array
+            globalState.allowedTabIds.push(tab.id);
+            // Set this new tab as the current active recording tab
+            globalState.recordingTabId = tab.id;
+            sendResponse({ success: true, tabId: tab.id });
+          });
+        } else {
+          sendResponse({ success: false, error: 'No start URL found in the global state' });
+        }
+        break;
 
     case 'start-recording-from-ui': {
       globalState.recording = true;
@@ -314,5 +317,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => {
   if (getContext(tabId)) {
     removeContext(tabId);
+  }
+});
+
+chrome.tabs.onCreated.addListener((tab) => {
+  // Check if the new tab has an openerTabId and if that opener is in allowedTabIds.
+  if (tab.openerTabId && globalState.allowedTabIds.includes(tab.openerTabId)) {
+    console.log('New tab opened from an allowed tab, adding to allowedTabIds:', tab.id);
+    globalState.allowedTabIds.push(tab.id);
+    // Optionally create a context if you use one.
+    createContext(tab.id);
+  }
+});
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  const activeTabId = activeInfo.tabId;
+  // If the activated tab is one of the allowed recording tabs, update recordingTabId.
+  if (globalState.allowedTabIds.includes(activeTabId)) {
+    globalState.recordingTabId = activeTabId;
+    console.log('Updated recordingTabId to:', activeTabId);
+  } else {
+    console.log('Activated tab is not in the allowed list.');
   }
 });

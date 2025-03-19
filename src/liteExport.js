@@ -319,7 +319,7 @@ console.log("LiteExport content script loaded in top frame?", window.top === win
            style.display !== 'none';
   }
 
-  function observeDynamicContent() {
+/*  function observeDynamicContent() {
     let dynamicContentTimeout = null;
     const dynamicContentObserver = new MutationObserver((mutationList) => {
       let newVisibleContent = false;
@@ -342,14 +342,14 @@ console.log("LiteExport content script loaded in top frame?", window.top === win
           triggerScreenshot("dynamicContentLoad");
         }, 500);
       }
-    });
-
+    }); 
     dynamicContentObserver.observe(document.documentElement, {
       childList: true,
       subtree: true,
     });
     return dynamicContentObserver;
-  }
+  }*/
+
 
   function observeDomMutations() {
     const observer = new MutationObserver((mutationList) => {
@@ -428,8 +428,6 @@ console.log("LiteExport content script loaded in top frame?", window.top === win
     document.addEventListener("submit", handleFormSubmit, true);
 
     // Start observing DOM mutations and dynamic content.
-    observeDomMutations();
-    observeDynamicContent();
   }
 
   function removeEventListeners() {

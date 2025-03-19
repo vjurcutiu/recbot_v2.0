@@ -46,12 +46,15 @@ function pauseRecordingForTab(tabId, sendResponse) {
       chrome.storage.local.set({ recording: false }, () => {
         console.log(`Pausing recording for tab ${tabId}. Context preserved.`);
         ensureContentScript(tabId, () => {
-          chrome.tabs.sendMessage(tabId, { action: 'pause' }, () => {
-            console.log(`Recording paused on tab ${tabId} due to click.`);
-            // Open the UI to allow the user to resume later.
-            openStartWindow();
-            sendResponse({ success: true, recording: false });
-          });
+          // Delay sending the pause message to allow the click to be recorded.
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tabId, { action: 'pause' }, () => {
+              console.log(`Recording paused on tab ${tabId} due to click.`);
+              // Open the UI to allow the user to resume later.
+              openStartWindow();
+              sendResponse({ success: true, recording: false });
+            });
+          }, 50); // Adjust delay as needed.
         });
       });
     } else {

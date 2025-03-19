@@ -5,48 +5,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Respond to the ping so that ensureContentScript knows we're ready.
       sendResponse({ pong: true });
       return;
-    }
-    
-    switch (message.action) {
-    case 'start':
-        try {
-            console.log("Recording started in content script.");
-            // (Your code to actually start recording can go here)
-        
-            // Now, notify the background to update actionsTaken with a recording message.
-        
-            sendResponse({ status: 'started' });
-        } catch (error) {
-            console.error("Error in start case:", error);
-            sendResponse({ status: 'error', error: error.toString() });
-        }
-        break;
-
-      case 'stop':
-        console.log("Recording stopped in content script.");
-        // Insert your code to finalize/stop recording here.
-        sendResponse({ status: 'stopped' });
-        break;
-
-      case 'pause':
-        console.log("Recording paused in content script.");
-        // Insert your code to pause recording here.
-        sendResponse({ status: 'paused' });
-        break;
-      default:
-        break;
-    }
-  });
+    }});
   
-  // Listen for clicks and send the click event to the background.
-  document.addEventListener('click', (event) => {
-    // List interactive selectors: adjust the selectors as needed.
+    document.addEventListener('click', (event) => {
+      // If the click happened inside a <select> element, do nothing.
+      if (event.target.closest('select')) return;
     
-    
-    
+      // Otherwise, send the message to the background script.
       chrome.runtime.sendMessage({ action: 'userClicked' });
-    
-  });
+    });
 
   document.addEventListener('keydown', (event) => {
     // Check if the event originates from an input, textarea, or select element.

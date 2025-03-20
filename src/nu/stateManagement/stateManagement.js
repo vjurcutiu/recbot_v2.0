@@ -25,7 +25,17 @@ export function updateRecordStateWithUrl(url) {
   const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
   const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
   
-  if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
+  if (step && Array.isArray(step.fragments)) {
+    // Ensure the fragment exists
+    while (step.fragments.length <= activeFragmentIndex) {
+      step.fragments.push({
+        actionsTaken: [],
+        interactableElements: [],
+        screenshots: [],
+        toggleAnswers: {},
+        fragmentIndex: step.fragments.length,
+      });
+    }
     step.fragments[activeFragmentIndex].currentURL = url;
     console.log("Updated currentURL in active fragment:", url);
   } else {
@@ -48,7 +58,7 @@ export function updateRecordStateWithScreenshot(filename) {
   }
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+export function handleMessage(message, sender, sendResponse) {
   switch (message.action) {
     case 'setActiveComponent':
       if (message.payload) {
@@ -230,7 +240,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const activeStepIndex = recordState.currentTask.activeStepIndex ?? 0;
       const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
       const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
-      if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex]) {
+      if (step && Array.isArray(step.fragments)) {
+        // Ensure the fragment exists
+        while (step.fragments.length <= activeFragmentIndex) {
+          step.fragments.push({
+            actionsTaken: [],
+            interactableElements: [],
+            screenshots: [],
+            toggleAnswers: {},
+            fragmentIndex: step.fragments.length,
+          });
+        }
         step.fragments[activeFragmentIndex].interactableElements = interactableElements;
         console.log("Updated interactableElements:", step.fragments[activeFragmentIndex].interactableElements);
         sendResponse({ success: true, updatedInteractables: step.fragments[activeFragmentIndex].interactableElements });
@@ -249,7 +269,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ activeComponent: globalState.activeComponent });
       break;
 
-    default:
-      break;
+      default:
+        // If no stateManagement action matches, let the caller know.
+        sendResponse({ success: false, error: 'Unrecognized stateManagement action.' });
+        break;
   }
-});
+}

@@ -132,9 +132,32 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
     setNeedsReplan(answer);
     updateToggleAnswer('needsReplan', answer);
     if (answer === 'yes') {
-      if (onEnableReplan) onEnableReplan();
+      // Record the toggle answers as a fragment first
+      chrome.runtime.sendMessage(
+        { 
+          action: 'addFragment', 
+          payload: { 
+            stepIndex: activeStepIndex, 
+            fragment: {
+              toggleAnswers: { ...toggleAnswers, needsReplan: answer },
+              actionsTaken: [],
+              interactableElements: [],
+              screenshots: []
+            }
+          } 
+        },
+        (response) => {
+          if (response && response.success) {
+            updateActiveFragmentIndex(response.addedFragment.fragmentIndex);
+            // Then trigger replanning by calling the callback
+            if (onEnableReplan) onEnableReplan();
+          } else {
+            console.error('Error adding fragment:', response && response.error);
+          }
+        }
+      );
     } else {
-      // Create fragment, resume recording and close window
+      // For "no", record the answers, resume recording, and close the window.
       chrome.runtime.sendMessage(
         { 
           action: 'addFragment', 
@@ -161,6 +184,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
       );
     }
   };
+
 
   // Back navigation functions remain unchanged.
   const goBackFromCloser = () => {

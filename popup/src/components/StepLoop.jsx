@@ -64,14 +64,21 @@ function StepLoop({ setActiveComponent }) {
     }
   };
 
-  // Confirm replanning by merging new steps.
   const confirmReplan = () => {
     const newSteps = [...steps, ...replannedSteps];
+    const newActiveStepIndex = activeStepIndex + 1; // Move to the next step after the current one.
     setSteps(newSteps);
+    setActiveStepIndex(newActiveStepIndex);
     chrome.runtime.sendMessage(
-      { action: 'updateTaskSteps', payload: { steps: newSteps } },
+      {
+        action: 'updateTaskSteps',
+        payload: { steps: newSteps, activeStepIndex: newActiveStepIndex },
+      },
       (response) => {
-        console.log('Task re-recorded with new steps:', response);
+        console.log('Task re-recorded with new steps and updated active step index:', response);
+        chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
+          window.close();
+        });
       }
     );
     setIsReplanning(false);

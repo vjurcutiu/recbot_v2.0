@@ -1,11 +1,28 @@
-import { globalState, recordState } from './src/nu/stateManagement/stateManagement.js';
+import { globalState, recordState, updateRecordStateWithScreenshot, updateRecordStateWithUrl, handleMessage as stateHandleMessage } from './src/nu/stateManagement/stateManagement.js';
 import { createContext, removeContext, getContext } from './src/nu/loop/context.js';
-import { updateRecordStateWithScreenshot, updateRecordStateWithUrl } from './src/nu/stateManagement/stateManagement.js';
 import { exportRecordState, exportScreenshots } from './src/nu/exporter/exporter.js';
 
 let windowOpened = false;
 let screenshotQueue = [];
 let screenshotCounter = 0;
+
+const stateManagementActions = new Set([
+  'setActiveComponent',
+  'setFilesLoaded',
+  'getFilesLoaded',
+  'updateTaskInfo',
+  'updateTaskSteps',
+  'updateToggleAnswers',
+  'addFragment',
+  'updateFragment',
+  'setActiveFragmentIndex',
+  'getActiveIndices',
+  'updateActionsTaken',
+  'recordInteractableElements',
+  'getRecordState',
+  'getActiveComponent',
+  // … add any other state actions here
+]);
 
 function openStartWindow() {
   chrome.windows.create({
@@ -65,7 +82,12 @@ function pauseRecordingForTab(tabId, sendResponse) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Background script received message:', message);
+  console.log('Router received message:', message);
+
+  if (stateManagementActions.has(message.action)) {
+    stateHandleMessage(message, sender, sendResponse);
+    return true; // Keep the message channel open for asynchronous responses.
+  }
 
   switch (message.action) {
     case 'setActiveComponent':

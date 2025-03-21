@@ -29,6 +29,12 @@ function StepLoop({ setActiveComponent }) {
   const handleNext = () => {
     if (activeStepIndex < steps.length - 1) {
       const newIndex = activeStepIndex + 1;
+      chrome.runtime.sendMessage(
+        { action: 'setActiveFragmentIndex', payload: { activeFragmentIndex: 0 } },
+        (response) => {
+          console.log('Fragment index reset for new step:', response);
+        }
+      );
       // Update local state immediately for responsiveness.
       setActiveStepIndex(newIndex);
       // Also update the background state with the new activeStepIndex.
@@ -54,6 +60,7 @@ function StepLoop({ setActiveComponent }) {
         // Use the currentTask.steps from the background state,
         // which should include the most up-to-date fragment data.
         const currentSteps = response.recordState.currentTask.steps || [];
+        console.log('current steps:', currentSteps)
         // Truncate the steps array at the current active step + 1.
         const truncatedSteps = currentSteps.slice(0, activeStepIndex + 1);
         

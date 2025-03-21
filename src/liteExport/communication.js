@@ -1,4 +1,4 @@
-import { pauseTracking, resumeTracking } from './eventManagement.js';
+import { pauseTracking, resumeTracking, startTracking, timedBuffer } from './eventManagement.js';
 
 
 // communication.js
@@ -10,12 +10,14 @@ export function setupCommunication({ initializeTracking, captureInteractableElem
     }
     try {
       if (message.action === "start") {
+        startTracking()
         initializeTracking();
         captureInteractableElements();
         recordCurrentUrl();
         triggerScreenshot('start');
         sendResponse({ status: "lite tracking + element capture started" });
       } else if (message.action === "stop") {
+        timedBuffer()
         triggerScreenshot('stop');
         destroyTracking();
         sendResponse({ status: "lite tracking stopped" });
@@ -28,6 +30,7 @@ export function setupCommunication({ initializeTracking, captureInteractableElem
         triggerScreenshot('resume');
         sendResponse({ status: "lite tracking resumed" });
       } else if (message.action === "pause") {
+        timedBuffer()
         triggerScreenshot('pause');
         // Instead of destroying tracking, just pause processing new events.
         pauseTracking();

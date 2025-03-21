@@ -20,23 +20,29 @@ export const recordState = {
   },
 };
 
+// New: an update log array to keep track of all changes
+export const updateLog = [];
+
+// Helper function to log state updates.
+function logUpdate(action, payload) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    action,
+    payload: JSON.parse(JSON.stringify(payload)) // deep copy for safety
+  };
+  updateLog.push(entry);
+  console.log("State Update Log:", entry);
+}
+
 export function updateRecordStateWithUrl(url) {
   const activeStepIndex = recordState.currentTask.activeStepIndex ?? 0;
   const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
   const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
   
-  if (step && Array.isArray(step.fragments)) {
-    // Ensure the fragment exists
-    while (step.fragments.length <= activeFragmentIndex) {
-      step.fragments.push({
-        actionsTaken: [],
-        interactableElements: [],
-        screenshots: [],
-        toggleAnswers: {},
-        fragmentIndex: step.fragments.length,
-      });
-    }
+  // Instead of auto-creating missing fragments, we check if the fragment exists.
+  if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
     step.fragments[activeFragmentIndex].currentURL = url;
+    logUpdate('updateRecordStateWithUrl', { url, activeStepIndex, activeFragmentIndex });
     console.log("Updated currentURL in active fragment:", url);
   } else {
     console.error("Active step or fragment not found for updating currentURL.");
@@ -52,6 +58,7 @@ export function updateRecordStateWithScreenshot(filename) {
       step.fragments[activeFragmentIndex].screenshots = [];
     }
     step.fragments[activeFragmentIndex].screenshots.push(filename);
+    logUpdate('updateRecordStateWithScreenshot', { filename, activeStepIndex, activeFragmentIndex });
     console.log("Updated recordState screenshots:", step.fragments[activeFragmentIndex].screenshots);
   } else {
     console.error("Active step or fragment not found for recordScreenshot.");
@@ -97,6 +104,7 @@ export function handleMessage(message, sender, sendResponse) {
         objectives: objectives !== undefined ? objectives : recordState.currentTask.objectives,
         startUrl: startUrl !== undefined ? startUrl : recordState.currentTask.startUrl,
       };
+      logUpdate('updateTaskInfo', { id, name, objectives, startUrl });
       sendResponse({ success: true, recordedTask: recordState.currentTask });
       break;
     }
@@ -125,6 +133,7 @@ export function handleMessage(message, sender, sendResponse) {
       if (activeStepIndex !== undefined) {
         recordState.currentTask.activeStepIndex = activeStepIndex;
       }
+      logUpdate('updateTaskSteps', { steps, activeStepIndex });
       sendResponse({ success: true, recordedTask: recordState.currentTask });
       break;
     }
@@ -134,6 +143,7 @@ export function handleMessage(message, sender, sendResponse) {
       const step = recordState.currentTask.steps[activeStepIndex];
       if (step && Array.isArray(step.fragments) && step.fragments[fragmentIndex] !== undefined) {
         step.fragments[fragmentIndex].toggleAnswers = toggleAnswers;
+        logUpdate('updateToggleAnswers', { toggleAnswers, activeStepIndex, fragmentIndex });
         sendResponse({ success: true, recordedTask: recordState.currentTask });
       } else {
         sendResponse({ success: false, error: 'Fragment not found' });
@@ -163,6 +173,7 @@ export function handleMessage(message, sender, sendResponse) {
           fragmentIndex: newFragmentIndex,
         };
         step.fragments.push(newFragment);
+        logUpdate('addFragment', { stepIndex, newFragment });
         sendResponse({ success: true, addedFragment: newFragment });
       } else {
         sendResponse({ success: false, error: 'Step not found' });
@@ -179,6 +190,7 @@ export function handleMessage(message, sender, sendResponse) {
           ...fragmentData,
           fragmentIndex,
         };
+        logUpdate('updateFragment', { stepIndex, fragmentIndex, fragmentData });
         sendResponse({ success: true, updatedFragment: step.fragments[fragmentIndex] });
       } else {
         sendResponse({ success: false, error: 'Fragment not found' });
@@ -189,6 +201,7 @@ export function handleMessage(message, sender, sendResponse) {
     case 'setActiveFragmentIndex': {
       const { activeFragmentIndex } = message.payload;
       recordState.currentTask.activeFragmentIndex = activeFragmentIndex;
+      logUpdate('setActiveFragmentIndex', { activeFragmentIndex });
       sendResponse({ success: true, activeFragmentIndex });
       break;
     }
@@ -201,36 +214,26 @@ export function handleMessage(message, sender, sendResponse) {
       break;
     }
 
-    // Updated updateActionsTaken handler:
     case 'updateActionsTaken': {
-      // Use provided indexes or fallback to the active ones from recordState
       const { liteEvent } = message.payload;
-      const stepIndex = message.payload.stepIndex ?? recordState.currentTask.activeStepIndex ?? 0;
-      const fragmentIndex = message.payload.fragmentIndex ?? recordState.currentTask.activeFragmentIndex ?? 0;
+      const stepIndex = message.payload.stepIndex ?? recordState.currentTask.activeStepIndex;
+      const fragmentIndex = message.payload.fragmentIndex ?? recordState.currentTask.activeFragmentIndex;
+      console.log("Inside updateActionsTaken:", stepIndex, fragmentIndex, recordState.currentTask.steps)
     
-      console.log("Logging event at step", stepIndex, "fragment", fragmentIndex);
-    
-      if (recordState.currentTask.steps && recordState.currentTask.steps[stepIndex]) {
-        const step = recordState.currentTask.steps[stepIndex];
-        if (!Array.isArray(step.fragments)) {
-          step.fragments = [];
-        }
-        while (step.fragments.length <= fragmentIndex) {
-          step.fragments.push({
-            actionsTaken: [],
-            interactableElements: [],
-            screenshots: [],
-            toggleAnswers: {},
-            fragmentIndex: step.fragments.length,
-          });
-        }
-        step.fragments[fragmentIndex].actionsTaken.push(liteEvent);
-        console.log("Updated actionsTaken:", step.fragments[fragmentIndex].actionsTaken);
-        sendResponse({ success: true });
-      } else {
-        console.error("Step not found for index:", stepIndex);
-        sendResponse({ success: false, error: "Step not found" });
+      if (!recordState.currentTask.steps || !recordState.currentTask.steps[stepIndex]) {
+        sendResponse({ success: false, error: 'Step does not exist' });
+        break;
       }
+      const step = recordState.currentTask.steps[stepIndex];
+      if (!Array.isArray(step.fragments) || !step.fragments[fragmentIndex]) {
+        sendResponse({ success: false, error: 'Fragment does not exist' });
+        break;
+      }
+      
+      step.fragments[fragmentIndex].actionsTaken.push(liteEvent);
+      logUpdate('updateActionsTaken', { liteEvent, stepIndex, fragmentIndex });
+      console.log("Updated actionsTaken:", step.fragments[fragmentIndex].actionsTaken);
+      sendResponse({ success: true });
       break;
     }
 
@@ -240,18 +243,10 @@ export function handleMessage(message, sender, sendResponse) {
       const activeStepIndex = recordState.currentTask.activeStepIndex ?? 0;
       const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
       const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
-      if (step && Array.isArray(step.fragments)) {
-        // Ensure the fragment exists
-        while (step.fragments.length <= activeFragmentIndex) {
-          step.fragments.push({
-            actionsTaken: [],
-            interactableElements: [],
-            screenshots: [],
-            toggleAnswers: {},
-            fragmentIndex: step.fragments.length,
-          });
-        }
+      // Instead of creating missing fragments, verify that the fragment exists.
+      if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
         step.fragments[activeFragmentIndex].interactableElements = interactableElements;
+        logUpdate('recordInteractableElements', { interactableElements, activeStepIndex, activeFragmentIndex });
         console.log("Updated interactableElements:", step.fragments[activeFragmentIndex].interactableElements);
         sendResponse({ success: true, updatedInteractables: step.fragments[activeFragmentIndex].interactableElements });
       } else {
@@ -269,9 +264,8 @@ export function handleMessage(message, sender, sendResponse) {
       sendResponse({ activeComponent: globalState.activeComponent });
       break;
 
-      default:
-        // If no stateManagement action matches, let the caller know.
-        sendResponse({ success: false, error: 'Unrecognized stateManagement action.' });
-        break;
+    default:
+      sendResponse({ success: false, error: 'Unrecognized stateManagement action.' });
+      break;
   }
 }

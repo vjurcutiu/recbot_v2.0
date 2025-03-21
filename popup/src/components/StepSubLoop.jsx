@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './styles/StepSubLoop.css'
 
+
 function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setActiveComponent }) {
   // Consolidated state for toggle answers and reason.
   const [toggleAnswers, setToggleAnswers] = useState({
@@ -95,7 +96,7 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
     setCloser(answer);
     updateToggleAnswer('closer', answer);
     if (answer === 'yes') {
-      // Create fragment, resume recording and close window
+      // Create a new fragment, update the active fragment index, resume recording, and close window.
       chrome.runtime.sendMessage(
         { 
           action: 'addFragment', 
@@ -123,65 +124,58 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
       );
     } else {
       setShowNeedsReplan(true);
-      setCurrentStep('needsReplan');
+      setCurrentStep('closer');
     }
   };
 
-  // Handles the Replanning toggle.
-  const handleNeedsReplanChange = (answer) => {
-    setNeedsReplan(answer);
-    updateToggleAnswer('needsReplan', answer);
-    if (answer === 'yes') {
-      console.log(answer)
-      // Record the toggle answers as a fragment first
-      chrome.runtime.sendMessage(
-        { 
-          action: 'updateFragment', 
-          payload: { 
-            stepIndex: activeStepIndex,
-            fragmentIndex: activeFragmentIndex,
-            fragmentData: {
-              toggleAnswers: { ...toggleAnswers, needsReplan: answer },
-              // Include any additional updates if necessary
-            }
-          } 
-        },
-        (response) => {
-          if (response && response.success) {
-            if (onEnableReplan) onEnableReplan();
-          } else {
-            console.error('Error updating fragment:', response && response.error);
-          }
+// Handles the Replanning toggle.
+const handleNeedsReplanChange = (answer) => {
+  setNeedsReplan(answer);
+  updateToggleAnswer('needsReplan', answer);
+  if (answer === 'yes') {
+    // For replanning "yes", do not create a new fragment.
+    // Instead, reset the activeFragmentIndex to 0.
+    chrome.runtime.sendMessage(
+      { 
+        action: 'setActiveFragmentIndex', 
+        payload: { activeFragmentIndex: 0 }
+      },
+      (response) => {
+        if (response && response.success) {
+          if (onEnableReplan) onEnableReplan();
+        } else {
+          console.error('Error resetting fragment index:', response && response.error);
         }
-      );
-    } else {
-      // For "no", record the answers, resume recording, and close the window.
-      chrome.runtime.sendMessage(
-        { 
-          action: 'addFragment', 
-          payload: { 
-            stepIndex: activeStepIndex, 
-            fragment: {
-              toggleAnswers: { ...toggleAnswers, needsReplan: answer },
-              actionsTaken: [],
-              interactableElements: [],
-              screenshots: []
-            }
-          } 
-        },
-        (response) => {
-          if (response && response.success) {
-            updateActiveFragmentIndex(response.addedFragment.fragmentIndex);
-            chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
-              window.close();
-            });
-          } else {
-            console.error('Error adding fragment:', response && response.error);
+      }
+    );
+  } else {
+    // For "no" or "not sure", create a new fragment and update the index.
+    chrome.runtime.sendMessage(
+      { 
+        action: 'addFragment', 
+        payload: { 
+          stepIndex: activeStepIndex, 
+          fragment: {
+            toggleAnswers: { ...toggleAnswers, needsReplan: answer },
+            actionsTaken: [],
+            interactableElements: [],
+            screenshots: []
           }
+        } 
+      },
+      (response) => {
+        if (response && response.success) {
+          updateActiveFragmentIndex(response.addedFragment.fragmentIndex);
+          chrome.runtime.sendMessage({ action: 'resumeRecording' }, () => {
+            window.close();
+          });
+        } else {
+          console.error('Error adding fragment:', response && response.error);
         }
-      );
-    }
-  };
+      }
+    );
+  }
+};
 
 
   // Back navigation functions remain unchanged.

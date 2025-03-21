@@ -26,6 +26,10 @@ export function flushEventBuffer() {
   eventBuffer = [];
 }
 
+export function timedBuffer() {
+  setTimeout(flushEventBuffer, 2000);
+}
+
 export function pauseTracking() {
   paused = true;
   console.log("Tracking paused (buffering events).");
@@ -36,6 +40,11 @@ export function resumeTracking() {
   // Flush any events that occurred while paused
   flushEventBuffer();
   console.log("Tracking resumed and events flushed.");
+}
+
+export function startTracking() {
+  paused = false;
+  console.log("Tracking started. Events will be flushed on a schedule or real-time.");
 }
 
 export function attachEventListeners() {

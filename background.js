@@ -24,6 +24,27 @@ const stateManagementActions = new Set([
   // … add any other state actions here
 ]);
 
+function ensureFirstStepAndFragment() {
+  const task = recordState.currentTask;
+  if (!Array.isArray(task.steps)) {
+    task.steps = [];
+  }
+  if (!task.steps[0]) {
+    task.steps[0] = {
+      fragments: [{
+        fragmentIndex: 0,
+        actionsTaken: [],
+        interactableElements: [],
+        screenshots: [],
+        toggleAnswers: {},
+      }]
+    };
+  }
+  // Also confirm active indices
+  task.activeStepIndex = 0;
+  task.activeFragmentIndex = 0;
+}
+
 function openStartWindow() {
   setTimeout(() => {
     chrome.windows.create({
@@ -73,7 +94,7 @@ function pauseRecordingForTab(tabId, sendResponse) {
               openStartWindow();
               sendResponse({ success: true, recording: false });
             });
-          }, 300); // Adjust delay as needed.
+          }, 50); // Adjust delay as needed.
         });
       });
     } else {
@@ -221,6 +242,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
 
     case 'start-recording-from-ui': {
+      ensureFirstStepAndFragment()
       globalState.recording = true;
       chrome.storage.local.set({ recording: true }, () => {
         console.log('Recording started via UI.');

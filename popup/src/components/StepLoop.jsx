@@ -44,6 +44,8 @@ function StepLoop({ setActiveComponent }) {
     }
   };
 
+  
+
   // Enable replanning by truncating future steps.
   const handleEnableReplan = () => {
     // First, get the latest recordState from the background

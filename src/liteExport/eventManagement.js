@@ -2,6 +2,42 @@
 import { handleClick, handleContextMenu, handleMouseMove, handleScroll, handleResize, handleInput, handleKeydown, handleUrlChange, handleFormSubmit } from './eventHandlers.js';
 import { observeDomMutations, observeDynamicContent, waitForStableDOM } from './observers.js';
 
+
+// Global event buffer and paused flag.
+let eventBuffer = [];
+export let paused = false;
+
+export function addEvent(eventRecord) {
+  // Always add the event to the buffer
+  eventBuffer.push(eventRecord);
+}
+
+export function flushEventBuffer() {
+  // Sort events by their timestamp to ensure correct order
+  eventBuffer.sort((a, b) => a.timestamp - b.timestamp);
+  // Process each event in order:
+  eventBuffer.forEach(event => {
+    chrome.runtime.sendMessage({
+      action: "updateActionsTaken",
+      payload: { liteEvent: event }
+    });
+  });
+  // Clear the buffer after flushing
+  eventBuffer = [];
+}
+
+export function pauseTracking() {
+  paused = true;
+  console.log("Tracking paused (buffering events).");
+}
+
+export function resumeTracking() {
+  paused = false;
+  // Flush any events that occurred while paused
+  flushEventBuffer();
+  console.log("Tracking resumed and events flushed.");
+}
+
 export function attachEventListeners() {
   document.addEventListener("click", handleClick, true);
   document.addEventListener("contextmenu", handleContextMenu);

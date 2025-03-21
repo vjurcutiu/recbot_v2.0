@@ -8,19 +8,24 @@ export function markUserInteraction() {
   setTimeout(() => { userInteracted = false; }, 500);
 }
 
+import { addEvent, paused } from './eventManagement.js';
+
 export function logEvent(type, data, callback) {
   const eventRecord = { type, timestamp: Date.now(), ...data };
-  chrome.runtime.sendMessage({
-    action: "updateActionsTaken",
-    payload: { liteEvent: eventRecord }
-  }, () => {
-    if (callback) callback();
-  });
-
-  // Trigger a screenshot for certain event types.
-  if (["pageLoad", "scrollMovement", "domMutation"].includes(type)) {
+  
+  // Always add the event to the buffer.
+  addEvent(eventRecord);
+  
+  // Optionally flush immediately if not paused.
+  // (For example, if you want real-time updates for some event types, you could conditionally flush here.)
+  if (!paused && ["pageLoad", "scrollMovement", "domMutation"].includes(type)) {
+    // Here you might call flushEventBuffer() or let a periodic timer handle flushing.
+    // For this example, we assume a periodic flush or a flush on resume.
+    // triggerScreenshot may still be called immediately:
     triggerScreenshot(type);
   }
+  
+  if (callback) callback();
 }
 
 export function triggerScreenshot(screenshotType) {

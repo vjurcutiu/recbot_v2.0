@@ -8,17 +8,17 @@ export function markUserInteraction() {
   setTimeout(() => { userInteracted = false; }, 500);
 }
 
-export function logEvent(type, data) {
+export function logEvent(type, data, callback) {
   const eventRecord = { type, timestamp: Date.now(), ...data };
   chrome.runtime.sendMessage({
     action: "updateActionsTaken",
-    payload: {
-      liteEvent: eventRecord,
-      // No indices provided; the background script will use its state.
-    }
+    payload: { liteEvent: eventRecord }
+  }, () => {
+    if (callback) callback();
   });
 
-  if (type === "pageLoad" || type === "scrollMovement" || type === "domMutation") {
+  // Trigger a screenshot for certain event types.
+  if (["pageLoad", "scrollMovement", "domMutation"].includes(type)) {
     triggerScreenshot(type);
   }
 }
@@ -41,7 +41,14 @@ export function handleClick(event) {
       position: { x: event.clientX, y: event.clientY }
     };
     console.log("Click event fired", data);
-    logEvent("click", data);
+
+    // Log the click event, and once logging is complete, check the conditions.
+    logEvent("click", data, () => {
+      // Only send the pause message if the click did NOT occur on a <select> or its children.
+      if (!event.target.matches('select, select *')) {
+        chrome.runtime.sendMessage({ action: 'userClicked' });
+      }
+    });
   } catch (err) {
     console.error("Error in click handler:", err);
   }

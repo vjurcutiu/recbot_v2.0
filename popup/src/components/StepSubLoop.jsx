@@ -132,27 +132,25 @@ function StepSubLoop({ activeStepIndex, onNext, onEnableReplan, isLastStep, setA
     setNeedsReplan(answer);
     updateToggleAnswer('needsReplan', answer);
     if (answer === 'yes') {
+      console.log(answer)
       // Record the toggle answers as a fragment first
       chrome.runtime.sendMessage(
         { 
-          action: 'addFragment', 
+          action: 'updateFragment', 
           payload: { 
-            stepIndex: activeStepIndex, 
-            fragment: {
+            stepIndex: activeStepIndex,
+            fragmentIndex: activeFragmentIndex,
+            fragmentData: {
               toggleAnswers: { ...toggleAnswers, needsReplan: answer },
-              actionsTaken: [],
-              interactableElements: [],
-              screenshots: []
+              // Include any additional updates if necessary
             }
           } 
         },
         (response) => {
           if (response && response.success) {
-            updateActiveFragmentIndex(response.addedFragment.fragmentIndex);
-            // Then trigger replanning by calling the callback
             if (onEnableReplan) onEnableReplan();
           } else {
-            console.error('Error adding fragment:', response && response.error);
+            console.error('Error updating fragment:', response && response.error);
           }
         }
       );

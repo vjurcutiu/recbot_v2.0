@@ -7,11 +7,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }});
   
-    document.addEventListener('click', (event) => {
-      // If the click happened inside a <select> element, do nothing.
-      if (event.target.closest('select')) return;
-    
-      // Otherwise, send the message to the background script.
+    document.addEventListener('mousedown', (event) => {
+      // If the user’s actual mousedown was on a <select> or on one of its ancestors:
+      if (event.target.matches('select, select *')) {
+        return;  // Don’t send the message
+      }
+      // Otherwise, proceed
       chrome.runtime.sendMessage({ action: 'userClicked' });
     });
 

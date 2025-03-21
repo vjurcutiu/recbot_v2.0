@@ -25,16 +25,18 @@ const stateManagementActions = new Set([
 ]);
 
 function openStartWindow() {
-  chrome.windows.create({
-    url: chrome.runtime.getURL("./dist/popup/start.html"),
-    type: "popup",
-    width: 800,
-    height: 600
-  }, (win) => {
-    console.log("start.html window opened:", win);
-  });
+  setTimeout(() => {
+    chrome.windows.create({
+      url: chrome.runtime.getURL("./dist/popup/start.html"),
+      type: "popup",
+      focused: true,
+      width: 800,
+      height: 600
+    }, (win) => {
+      console.log("start.html window opened:", win);
+    });
+  }, 300); // Adjust delay as needed
 }
-
 function ensureContentScript(tabId, callback, retries = 3) {
   chrome.tabs.sendMessage(tabId, { action: "ping" }, (response) => {
     if (chrome.runtime.lastError || !response) {
@@ -71,7 +73,7 @@ function pauseRecordingForTab(tabId, sendResponse) {
               openStartWindow();
               sendResponse({ success: true, recording: false });
             });
-          }, 50); // Adjust delay as needed.
+          }, 300); // Adjust delay as needed.
         });
       });
     } else {

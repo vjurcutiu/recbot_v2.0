@@ -46,22 +46,31 @@ function StepLoop({ setActiveComponent }) {
 
   // Enable replanning by truncating future steps.
   const handleEnableReplan = () => {
-    const confirmed = window.confirm(
-      "This will delete all future steps. Do you wish to continue?"
-    );
-    if (confirmed) {
-      const truncatedSteps = steps.slice(0, activeStepIndex + 1);
-      setSteps(truncatedSteps);
-      setReplannedSteps([]);
-      setIsReplanning(true);
-      // Update background state with the truncated steps.
-      chrome.runtime.sendMessage(
-        { action: 'updateTaskSteps', payload: { steps: truncatedSteps } },
-        (response) => {
-          console.log('Steps truncated for replanning:', response);
-        }
-      );
-    }
+    // First, get the latest recordState from the background
+    chrome.runtime.sendMessage({ action: 'getRecordState' }, (response) => {
+      if (response && response.recordState && response.recordState.currentTask) {
+        // Use the currentTask.steps from the background state,
+        // which should include the most up-to-date fragment data.
+        const currentSteps = response.recordState.currentTask.steps || [];
+        // Truncate the steps array at the current active step + 1.
+        const truncatedSteps = currentSteps.slice(0, activeStepIndex + 1);
+        
+        // Update local state with these truncated steps.
+        setSteps(truncatedSteps);
+        setReplannedSteps([]);
+        setIsReplanning(true);
+  
+        // Update the background state with the truncated steps.
+        chrome.runtime.sendMessage(
+          { action: 'updateTaskSteps', payload: { steps: truncatedSteps } },
+          (res) => {
+            console.log('Steps truncated for replanning:', res);
+          }
+        );
+      } else {
+        console.error('Could not get current task state for replanning.');
+      }
+    });
   };
 
   const confirmReplan = () => {

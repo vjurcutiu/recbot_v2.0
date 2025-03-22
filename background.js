@@ -45,7 +45,11 @@ function ensureFirstStepAndFragment() {
   task.activeFragmentIndex = 0;
 }
 
-function openStartWindow() {
+function openStartWindow(delay = 300, autoCloseAfter = null) {
+  if (windowOpened) {
+    console.log("Window is already open. Not opening a new one.");
+    return;
+  }
   setTimeout(() => {
     chrome.windows.create({
       url: chrome.runtime.getURL("./dist/popup/start.html"),
@@ -54,10 +58,36 @@ function openStartWindow() {
       width: 800,
       height: 600
     }, (win) => {
+      if (chrome.runtime.lastError || !win) {
+        console.error("Failed to open window:", chrome.runtime.lastError);
+        return;
+      }
+      windowOpened = true;
       console.log("start.html window opened:", win);
+      
+      // Optionally auto-close the window after a specified timeout.
+      if (autoCloseAfter) {
+        setTimeout(() => {
+          chrome.windows.remove(win.id, () => {
+            windowOpened = false;
+            console.log("Window automatically closed after timeout.");
+          });
+        }, autoCloseAfter);
+      }
+      
+      // Listen for the window being closed manually to reset the flag.
+      chrome.windows.onRemoved.addListener(function onRemoved(removedWindowId) {
+        if (removedWindowId === win.id) {
+          windowOpened = false;
+          chrome.windows.onRemoved.removeListener(onRemoved);
+          console.log("Window closed, flag reset.");
+        }
+      });
     });
-  }, 300); // Adjust delay as needed
+  }, delay);
 }
+
+
 function ensureContentScript(tabId, callback, retries = 3) {
   chrome.tabs.sendMessage(tabId, { action: "ping" }, (response) => {
     if (chrome.runtime.lastError || !response) {
@@ -140,6 +170,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'getFilesLoaded':
       sendResponse({ filesLoaded: globalState.filesLoaded });
       break;
+
+    case 'openWindow': {
+      openStartWindow();
+      sendResponse({ success: true });
+      break;
+    }
 
     case 'recordTask':
       if (message.payload) {

@@ -422,3 +422,27 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
     console.log('Activated tab is not in the allowed list.');
   }
 });
+
+chrome.tabs.onCreated.addListener(function(tab) {
+  if (tab.openerTabId && globalState.allowedTabIds.indexOf(tab.openerTabId) !== -1) {
+      if (globalState.allowedTabIds.indexOf(tab.id) === -1) {
+          console.log("New tab opened from allowed tab, adding context:", tab.id);
+          globalState.allowedTabIds.push(tab.id);
+          createContext(tab.id);
+      }
+  }
+});
+
+chrome.webNavigation.onCreatedNavigationTarget.addListener(function(details) {
+  if (globalState.allowedTabIds.indexOf(details.sourceTabId) !== -1) {
+      if (globalState.allowedTabIds.indexOf(details.tabId) === -1) {
+          console.log("New navigation target from allowed tab, adding context:", details.tabId);
+          globalState.allowedTabIds.push(details.tabId);
+          createContext(details.tabId);
+      }
+      globalState.recordingTabId = details.tabId;
+      chrome.tabs.sendMessage(details.tabId, { action: "start" }, function(response) {
+          console.log("Started recording on new navigation target tab:", response);
+      });
+  }
+});

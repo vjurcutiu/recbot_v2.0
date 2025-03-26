@@ -239,16 +239,51 @@ export function handleMessage(message, sender, sendResponse) {
 
     case 'recordInteractableElements': {
       const { interactableElements } = message.payload;
-      console.log('interactable elements', interactableElements);
+      console.log("Received interactableElements payload:", interactableElements);
+    
       const activeStepIndex = recordState.currentTask.activeStepIndex ?? 0;
       const activeFragmentIndex = recordState.currentTask.activeFragmentIndex ?? 0;
       const step = recordState.currentTask.steps && recordState.currentTask.steps[activeStepIndex];
-      // Instead of creating missing fragments, verify that the fragment exists.
+    
       if (step && Array.isArray(step.fragments) && step.fragments[activeFragmentIndex] !== undefined) {
-        step.fragments[activeFragmentIndex].interactableElements = interactableElements;
-        logUpdate('recordInteractableElements', { interactableElements, activeStepIndex, activeFragmentIndex });
-        console.log("Updated interactableElements:", step.fragments[activeFragmentIndex].interactableElements);
-        sendResponse({ success: true, updatedInteractables: step.fragments[activeFragmentIndex].interactableElements });
+        // Initialize the set if it hasn't been already
+        if (!globalState.loggedInteractableElements) {
+          globalState.loggedInteractableElements = new Set();
+        }
+        const loggedSet = globalState.loggedInteractableElements;
+        console.log("Current loggedInteractableElements set:", Array.from(loggedSet));
+    
+        // Filter out elements already logged based on a unique key (e.g. xpath)
+        const newElements = interactableElements.filter(el => {
+          if (loggedSet.has(el.xpath)) {
+            console.log("Skipping already logged element with xpath:", el.xpath);
+            return false;
+          }
+          console.log("Logging new element with xpath:", el.xpath);
+          loggedSet.add(el.xpath);
+          return true;
+        });
+    
+        // Optionally merge the new elements with the ones already stored
+        step.fragments[activeFragmentIndex].interactableElements = [
+          ...(step.fragments[activeFragmentIndex].interactableElements || []),
+          ...newElements
+        ];
+    
+        console.log("New elements after filtering:", newElements);
+        console.log("Updated loggedInteractableElements set:", Array.from(loggedSet));
+        console.log("Updated interactableElements in fragment:", step.fragments[activeFragmentIndex].interactableElements);
+    
+        logUpdate('recordInteractableElements', {
+          newElements,
+          activeStepIndex,
+          activeFragmentIndex
+        });
+    
+        sendResponse({
+          success: true,
+          updatedInteractables: step.fragments[activeFragmentIndex].interactableElements
+        });
       } else {
         console.error("Active step or fragment not found for recordInteractableElements.");
         sendResponse({ success: false, error: "Active step or fragment not found" });

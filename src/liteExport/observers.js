@@ -26,9 +26,11 @@ export function observeDynamicContent() {
     for (const mutation of mutationList) {
       if (mutation.type === "childList" && mutation.addedNodes.length) {
         mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE &&
-              isElementInViewport(node) &&
-              isElementVisible(node)) {
+          if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            isElementInViewport(node) &&
+            isElementVisible(node)
+          ) {
             newVisibleContent = true;
           }
         });
@@ -40,6 +42,9 @@ export function observeDynamicContent() {
       dynamicContentTimeout = setTimeout(() => {
         logEvent("dynamicContentLoad", { mutationCount: mutationList.length });
         triggerScreenshot("dynamicContentLoad");
+
+        // New functionality: Check for new interactable elements.
+        captureInteractableElements();
       }, 500);
     }
   });
@@ -48,6 +53,7 @@ export function observeDynamicContent() {
     childList: true,
     subtree: true,
   });
+
   return dynamicContentObserver;
 }
 

@@ -50,6 +50,8 @@ function openStartWindow(delay = 300, autoCloseAfter = null) {
     console.log("Window is already open. Not opening a new one.");
     return;
   }
+  // Set the flag immediately to prevent re-entry.
+  windowOpened = true;
   setTimeout(() => {
     chrome.windows.create({
       url: chrome.runtime.getURL("./dist/popup/start.html"),
@@ -60,9 +62,10 @@ function openStartWindow(delay = 300, autoCloseAfter = null) {
     }, (win) => {
       if (chrome.runtime.lastError || !win) {
         console.error("Failed to open window:", chrome.runtime.lastError);
+        // Reset the flag if creation failed.
+        windowOpened = false;
         return;
       }
-      windowOpened = true;
       console.log("start.html window opened:", win);
       
       // Optionally auto-close the window after a specified timeout.

@@ -218,7 +218,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             return;
           }
           // Use the recording tab's windowId
-          chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg" }, (dataUrl) => {
+          chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" }, (dataUrl) => {
             if (chrome.runtime.lastError) {
               console.error("Screenshot capture failed:", chrome.runtime.lastError.message);
               return;

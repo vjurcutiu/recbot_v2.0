@@ -65,7 +65,17 @@ function isLatin1(str) {
 }
 
 export function captureInteractableElements() {
-  const selector = ['a', 'button', 'input', 'select', 'textarea', '[role="button"]'].join(',');
+  const selector = ['a', 
+                    'button', 
+                    'input', 
+                    'select', 
+                    'textarea', 
+                    '[role="button"]',
+                    '[role="checkbox"]:not(.fa1e2a2fae)',
+                    '[role="link"]',
+                    '[role="menuitem"]',
+                    '[role="switch"]',
+                    ].join(',');
   const elements = Array.from(document.querySelectorAll(selector));
   const interactableData = elements.map(el => {
     const text = el.textContent ? el.textContent.trim() : '';
